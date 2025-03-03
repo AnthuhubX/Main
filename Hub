@@ -3,45 +3,99 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- Create a new window
 local Window = Rayfield:CreateWindow({
-   Name = "Rayfield Example Window",
-   Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
-   LoadingTitle = "Rayfield Interface Suite",
-   LoadingSubtitle = "by Sirius",
-   Theme = "Default", -- Check https://docs.sirius.menu/rayfield/configuration/themes
+    Name = "Rayfield Example Window",
+    Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
+    LoadingTitle = "Rayfield Interface Suite",
+    LoadingSubtitle = "by Sirius",
+    Theme = "Default", -- Check https://docs.sirius.menu/rayfield/configuration/themes
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
 
-   DisableRayfieldPrompts = false,
-   DisableBuildWarnings = false, -- Prevents Rayfield from warning when the script has a version mismatch with the interface
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = nil, -- Create a custom folder for your hub/game
+        FileName = "Big Hub"
+    },
 
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = nil, -- Create a custom folder for your hub/game
-      FileName = "Big Hub"
-   },
+    Discord = {
+        Enabled = false, -- Prompt the user to join your Discord server if their executor supports it
+        Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ABCD would be ABCD
+        RememberJoins = true -- Set this to false to make them join the discord every time they load it up
+    },
 
-   Discord = {
-      Enabled = false, -- Prompt the user to join your Discord server if their executor supports it
-      Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ ABCD would be ABCD
-      RememberJoins = true -- Set this to false to make them join the discord every time they load it up
-   },
-
-   KeySystem = false, -- Set this to true to use our key system
-   KeySettings = {
-      Title = "Untitled",
-      Subtitle = "Key System",
-      Note = "No method of obtaining the key is provided", -- Use this to tell the user how to get a key
-      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
-      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
-      GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
-      Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
-   }
+    KeySystem = false, -- Set this to true to use our key system
+    KeySettings = {
+        Title = "Untitled",
+        Subtitle = "Key System",
+        Note = "No method of obtaining the key is provided", -- Use this to tell the user how to get a key
+        FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
+        SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
+        GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
+        Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+    }
 })
 
 -- Create a new tab
 local MainTab = Window:CreateTab("Main")
 
+-- Walk Speed and Jump Power Input Text
+local walkSpeedValue = 16
+local jumpPowerValue = 50
+
+MainTab:CreateInput({
+    Name = "Walk Speed",
+    PlaceholderText = "Enter walk speed (max 1000)",
+    RemoveTextAfterFocusLost = true,
+    Callback = function(Value)
+        walkSpeedValue = tonumber(Value)
+        if walkSpeedValue > 1000 then walkSpeedValue = 1000 end
+    end
+})
+
+MainTab:CreateInput({
+    Name = "Jump Power",
+    PlaceholderText = "Enter jump power (max 1000)",
+    RemoveTextAfterFocusLost = true,
+    Callback = function(Value)
+        jumpPowerValue = tonumber(Value)
+        if jumpPowerValue > 1000 then jumpPowerValue = 1000 end
+    end
+})
+
+-- Toggle for Walk Speed
+local walkSpeedEnabled = false
+MainTab:CreateToggle({
+    Name = "Toggle Walk Speed",
+    CurrentValue = false,
+    Flag = "WalkSpeedToggle",
+    Callback = function(Value)
+        walkSpeedEnabled = Value
+        if walkSpeedEnabled then
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = walkSpeedValue
+        else
+            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16 -- Default walk speed
+        end
+    end
+})
+
+-- Toggle for Jump Power
+local jumpPowerEnabled = false
+MainTab:CreateToggle({
+    Name = "Toggle Jump Power",
+    CurrentValue = false,
+    Flag = "JumpPowerToggle",
+    Callback = function(Value)
+        jumpPowerEnabled = Value
+        if jumpPowerEnabled then
+            game.Players.LocalPlayer.Character.Humanoid.JumpPower = jumpPowerValue
+        else
+            game.Players.LocalPlayer.Character.Humanoid.JumpPower = 50 -- Default jump power
+        end
+    end
+})
+
 -- Toggle for highlighting players
 local highlightEnabled = false
-
 MainTab:CreateToggle({
     Name = "Highlight Players",
     CurrentValue = false,
@@ -82,3 +136,36 @@ if highlightEnabled then
         onPlayerAdded(player)
     end
 end
+
+-- Function for aimbot
+local aimbotEnabled = false
+local aimbotConnection
+MainTab:CreateToggle({
+    Name = "Aimbot",
+    CurrentValue = false,
+    Flag = "AimbotToggle",
+    Callback = function(Value)
+        aimbotEnabled = Value
+        if aimbotEnabled then
+            aimbotConnection = game:GetService("RunService").RenderStepped:Connect(function()
+                local camera = game.Workspace.CurrentCamera
+                local closestPlayer, closestDistance = nil, math.huge
+                for _, player in pairs(game.Players:GetPlayers()) do
+                    if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        local distance = (camera.CFrame.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                        if distance < closestDistance then
+                            closestPlayer = player
+                            closestDistance = distance
+                        end
+                    end
+                end
+                if closestPlayer then
+                    camera.CFrame = CFrame.new(camera.CFrame.Position, closestPlayer.Character.HumanoidRootPart.Position)
+                end
+            end)
+        elseif aimbotConnection then
+            aimbotConnection:Disconnect()
+            aimbotConnection = nil
+        end
+    end
+})
