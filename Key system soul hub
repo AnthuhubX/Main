@@ -6,8 +6,8 @@ local player = Players.LocalPlayer
 
 -- List of valid keys
 local validKeys = {
-    ["111"] = "https://raw.githubusercontent.com/AnthuhubX/Main/refs/heads/main/Hub",
-    ["Novaisbest"] = "https://raw.githubusercontent.com/AnthuhubX/Main/refs/heads/main/Hub"
+    ["111"] = "",
+    ["Novaisbest"] = "https://raw.githubusercontent.com/nocturnal631/Dead-roil-soul-hub/refs/heads/main/Drad"
 }
 
 -- Create ScreenGui
@@ -28,11 +28,11 @@ local uiCorner = Instance.new("UICorner")
 uiCorner.CornerRadius = UDim.new(0, 10)
 uiCorner.Parent = frame
 
--- Create Title Label (Soul Hub)
+-- Create Title Label (Sypher Hub)
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, 0, 0, 40)
 titleLabel.Position = UDim2.new(0, 0, 0, 5)
-titleLabel.Text = "Soul hub"
+titleLabel.Text = "Anthu hub"
 titleLabel.TextScaled = true
 titleLabel.Font = Enum.Font.GothamBold
 titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
