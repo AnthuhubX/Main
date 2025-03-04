@@ -7,8 +7,8 @@ function FrostyGUI:CreateWindow(title)
     setmetatable(window, FrostyGUI)
     window.title = title
     window.elements = {}
-    
-    -- Create a ScreenGui and Frame for the window
+    window.yOffset = 60
+
     window.gui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
     window.frame = Instance.new("Frame", window.gui)
     window.frame.Size = UDim2.new(0.5, 0, 0.5, 0)
@@ -23,6 +23,12 @@ function FrostyGUI:CreateWindow(title)
     return window
 end
 
+function FrostyGUI:AddElement(parent, element)
+    element.Position = UDim2.new(0, 0, 0, parent.yOffset)
+    parent.yOffset = parent.yOffset + 60
+    table.insert(parent.elements, element)
+end
+
 function FrostyGUI:CreateButton(parent, text, callback)
     local button = Instance.new("TextButton", parent.frame)
     button.Text = text
@@ -30,8 +36,7 @@ function FrostyGUI:CreateButton(parent, text, callback)
     button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     
     button.MouseButton1Click:Connect(callback)
-    
-    table.insert(parent.elements, button)
+    self:AddElement(parent, button)
     return button
 end
 
@@ -41,7 +46,7 @@ function FrostyGUI:CreateLabel(parent, text)
     label.Size = UDim2.new(1, 0, 0, 50)
     label.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     
-    table.insert(parent.elements, label)
+    self:AddElement(parent, label)
     return label
 end
 
@@ -83,8 +88,44 @@ function FrostyGUI:CreateSlider(parent, min, max, callback)
         end
     end)
     
-    table.insert(parent.elements, sliderFrame)
+    self:AddElement(parent, sliderFrame)
     return sliderFrame
+end
+
+function FrostyGUI:CreateDropdown(parent, options, callback)
+    local dropdownFrame = Instance.new("Frame", parent.frame)
+    dropdownFrame.Size = UDim2.new(1, 0, 0, 50)
+    dropdownFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    
+    local dropdown = Instance.new("TextButton", dropdownFrame)
+    dropdown.Text = "Select an option"
+    dropdown.Size = UDim2.new(1, 0, 1, 0)
+    dropdown.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
+    
+    local optionList = Instance.new("Frame", dropdownFrame)
+    optionList.Size = UDim2.new(1, 0, #options * 50, 0)
+    optionList.Position = UDim2.new(0, 0, 1, 0)
+    optionList.Visible = false
+    
+    for i, option in ipairs(options) do
+        local optionButton = Instance.new("TextButton", optionList)
+        optionButton.Text = option
+        optionButton.Size = UDim2.new(1, 0, 0, 50)
+        optionButton.Position = UDim2.new(0, 0, (i - 1) * 50, 0)
+        
+        optionButton.MouseButton1Click:Connect(function()
+            dropdown.Text = option
+            optionList.Visible = false
+            callback(option)
+        end)
+    end
+    
+    dropdown.MouseButton1Click:Connect(function()
+        optionList.Visible = not optionList.Visible
+    end)
+    
+    self:AddElement(parent, dropdownFrame)
+    return dropdownFrame
 end
 
 return FrostyGUI
