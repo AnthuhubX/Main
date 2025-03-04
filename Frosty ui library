@@ -1,324 +1,297 @@
--- FrostyGUI.lua
-local FrostyGUI = {}
-FrostyGUI.__index = FrostyGUI
+-- FrostGUI Library
 
-function FrostyGUI:CreateWindow(title)
-    local window = {}
-    setmetatable(window, FrostyGUI)
-    window.title = title
-    window.elements = {}
-    window.yOffset = 60
+local FrostGUI = {}
 
-    window.gui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
-    window.frame = Instance.new("Frame", window.gui)
-    window.frame.Size = UDim2.new(0.5, 0, 0.5, 0)
-    window.frame.Position = UDim2.new(0.25, 0, 0.25, 0)
-    window.frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    window.frame.BorderSizePixel = 2
-    window.frame.BorderColor3 = Color3.fromRGB(255, 255, 255)
+-- Button Component
+local Button = {}
+Button.__index = Button
+
+function Button.new(text, size, position)
+    local self = setmetatable({}, Button)
+
+    -- Create the button
+    self.button = Instance.new("TextButton")
+    self.button.Size = size or UDim2.new(0, 100, 0, 50)
+    self.button.Position = position or UDim2.new(0, 0, 0, 0)
+    self.button.Text = text or "Button"
+    self.button.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+    self.button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    self.button.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+    return self
+end
+
+function Button:SetText(newText)
+    self.button.Text = newText
+end
+
+function Button:SetPosition(newPosition)
+    self.button.Position = newPosition
+end
+
+FrostGUI.Button = Button
+
+-- Label Component
+local Label = {}
+Label.__index = Label
+
+function Label.new(text, size, position)
+    local self = setmetatable({}, Label)
+
+    -- Create the label
+    self.label = Instance.new("TextLabel")
+    self.label.Size = size or UDim2.new(0, 100, 0, 50)
+    self.label.Position = position or UDim2.new(0, 0, 0, 0)
+    self.label.Text = text or "Label"
+    self.label.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    self.label.TextColor3 = Color3.fromRGB(0, 0, 0)
+    self.label.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+    return self
+end
+
+function Label:SetText(newText)
+    self.label.Text = newText
+end
+
+function Label:SetPosition(newPosition)
+    self.label.Position = newPosition
+end
+
+FrostGUI.Label = Label
+
+-- Window Component
+local Window = {}
+Window.__index = Window
+
+function Window.new(title, size, position)
+    local self = setmetatable({}, Window)
+
+    -- Create the window frame
+    self.window = Instance.new("Frame")
+    self.window.Size = size or UDim2.new(0, 300, 0, 200)
+    self.window.Position = position or UDim2.new(0, 0, 0, 0)
+    self.window.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    self.window.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+    -- Create the title label
+    self.titleLabel = Instance.new("TextLabel")
+    self.titleLabel.Size = UDim2.new(1, 0, 0, 30)
+    self.titleLabel.Position = UDim2.new(0, 0, 0, 0)
+    self.titleLabel.Text = title or "Window"
+    self.titleLabel.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    self.titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    self.titleLabel.Parent = self.window
+
+    return self
+end
+
+function Window:AddChild(child)
+    child.Parent = self.window
+end
+
+function Window:SetTitle(newTitle)
+    self.titleLabel.Text = newTitle
+end
+
+function Window:SetPosition(newPosition)
+    self.window.Position = newPosition
+end
+
+FrostGUI.Window = Window
+
+-- Toggle Component
+local Toggle = {}
+Toggle.__index = Toggle
+
+function Toggle.new(text, default, callback)
+    local self = setmetatable({}, Toggle)
+
+    -- Create the toggle
+    self.toggle = Instance.new("TextButton")
+    self.toggle.Size = UDim2.new(0, 100, 0, 50)
+    self.toggle.Position = UDim2.new(0, 0, 0, 0)
+    self.toggle.Text = text or "Toggle"
+    self.toggle.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+    self.toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+    self.toggle.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
     
-    local titleLabel = Instance.new("TextLabel", window.frame)
-    titleLabel.Text = title
-    titleLabel.Size = UDim2.new(1, 0, 0, 50)
-    titleLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.Font = Enum.Font.SourceSansBold
-    titleLabel.TextSize = 24
-    
-    -- Enable dragging
-    local dragging = false
-    local dragInput, mousePos, framePos
+    self.state = default or false
+    self.callback = callback or function() end
 
-    local function update(input)
-        local delta = input.Position - mousePos
-        window.frame.Position = UDim2.new(
-            math.clamp(framePos.X.Scale + delta.X / window.gui.AbsoluteSize.X, 0, 1 - window.frame.Size.X.Scale),
-            framePos.X.Offset,
-            math.clamp(framePos.Y.Scale + delta.Y / window.gui.AbsoluteSize.Y, 0, 1 - window.frame.Size.Y.Scale),
-            framePos.Y.Offset
-        )
+    self.toggle.MouseButton1Click:Connect(function()
+        self.state = not self.state
+        self:Update()
+        self.callback(self.state)
+    end)
+
+    self:Update()
+    
+    return self
+end
+
+function Toggle:Update()
+    if self.state then
+        self.toggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    else
+        self.toggle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
     end
-
-    window.frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            mousePos = input.Position
-            framePos = window.frame.Position
-
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-
-    window.frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            update(input)
-        end
-    end)
-    
-    return window
 end
 
-function FrostyGUI:AddElement(parent, element)
-    element.Position = UDim2.new(0, 10, 0, parent.yOffset)
-    element.Size = UDim2.new(1, -20, 0, 40)
-    parent.yOffset = parent.yOffset + 50
-    table.insert(parent.elements, element)
-end
+FrostGUI.Toggle = Toggle
 
-function FrostyGUI:CreateButton(parent, text, callback)
-    local button = Instance.new("TextButton", parent.frame)
-    button.Text = text
-    button.Size = UDim2.new(1, 0, 0, 50)
-    button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    button.Font = Enum.Font.SourceSans
-    button.TextSize = 18
-    
-    button.MouseButton1Click:Connect(callback)
-    self:AddElement(parent, button)
-    return button
-end
+-- Slider Component
+local Slider = {}
+Slider.__index = Slider
 
-function FrostyGUI:CreateLabel(parent, text)
-    local label = Instance.new("TextLabel", parent.frame)
-    label.Text = text
-    label.Size = UDim2.new(1, 0, 0, 50)
-    label.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.Font = Enum.Font.SourceSans
-    label.TextSize = 18
-    
-    self:AddElement(parent, label)
-    return label
-end
+function Slider.new(text, min, max, default, callback)
+    local self = setmetatable({}, Slider)
 
-function FrostyGUI:CreateSlider(parent, min, max, callback)
-    local sliderFrame = Instance.new("Frame", parent.frame)
-    sliderFrame.Size = UDim2.new(1, 0, 0, 50)
-    sliderFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    
-    local slider = Instance.new("TextButton", sliderFrame)
-    slider.Size = UDim2.new(0, 10, 1, 0)
-    slider.Position = UDim2.new(0, 0, 0, 0)
-    slider.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
-    
-    local dragging = false
-    
-    local function updateSlider(input)
-        local relativePos = math.clamp((input.Position.X - sliderFrame.AbsolutePosition.X) / sliderFrame.AbsoluteSize.X, 0, 1)
-        slider.Position = UDim2.new(relativePos, 0, 0, 0)
-        local value = min + (max - min) * relativePos
-        callback(value)
-    end
+    -- Create the slider
+    self.slider = Instance.new("Frame")
+    self.slider.Size = UDim2.new(0, 200, 0, 50)
+    self.slider.Position = UDim2.new(0, 0, 0, 0)
+    self.slider.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+    self.slider.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
-    slider.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            updateSlider(input)
+    self.min = min or 0
+    self.max = max or 100
+    self.value = default or min
+    self.callback = callback or function() end
+
+    self.label = Instance.new("TextLabel")
+    self.label.Size = UDim2.new(1, 0, 0, 20)
+    self.label.Position = UDim2.new(0, 0, 0, 0)
+    self.label.Text = text or "Slider"
+    self.label.Parent = self.slider
+
+    self.knob = Instance.new("Frame")
+    self.knob.Size = UDim2.new(0, 10, 0, 30)
+    self.knob.Position = UDim2.new((self.value - self.min) / (self.max - self.min), 0, 0.5, -15)
+    self.knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    self.knob.Parent = self.slider
+
+    self.knob.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            self.dragging = true
         end
     end)
-    
-    slider.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = false
+
+    self.knob.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            self.dragging = false
         end
     end)
-    
-    slider.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            updateSlider(input)
+
+    self.slider.InputChanged:Connect(function(input)
+        if self.dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local relativePos = (input.Position.X - self.slider.AbsolutePosition.X) / self.slider.AbsoluteSize.X
+            self.value = math.clamp(relativePos * (self.max - self.min) + self.min, self.min, self.max)
+            self.knob.Position = UDim2.new((self.value - self.min) / (self.max - self.min), 0, 0.5, -15)
+            self.callback(self.value)
         end
     end)
-    
-    self:AddElement(parent, sliderFrame)
-    return sliderFrame
+
+    return self
 end
 
-function FrostyGUI:CreateDropdown(parent, options, callback)
-    local dropdownFrame = Instance.new("Frame", parent.frame)
-    dropdownFrame.Size = UDim2.new(1, 0, 0, 50)
-    dropdownFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    
-    local dropdown = Instance.new("TextButton", dropdownFrame)
-    dropdown.Text = "Select an option"
-    dropdown.Size = UDim2.new(1, 0, 1, 0)
-    dropdown.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
-    
-    local optionList = Instance.new("Frame", dropdownFrame)
-    optionList.Size = UDim2.new(1, 0, #options * 50, 0)
-    optionList.Position = UDim2.new(0, 0, 1, 0)
-    optionList.Visible = false
-    
+FrostGUI.Slider = Slider
+
+-- Dropdown Component
+local Dropdown = {}
+Dropdown.__index = Dropdown
+
+function Dropdown.new(text, options, callback)
+    local self = setmetatable({}, Dropdown)
+
+    -- Create the dropdown
+    self.dropdown = Instance.new("Frame")
+    self.dropdown.Size = UDim2.new(0, 200, 0, 50)
+    self.dropdown.Position = UDim2.new(0, 0, 0, 0)
+    self.dropdown.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
+    self.dropdown.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+    self.label = Instance.new("TextLabel")
+    self.label.Size = UDim2.new(1, 0, 0, 20)
+    self.label.Position = UDim2.new(0, 0, 0, 0)
+    self.label.Text = text or "Dropdown"
+    self.label.Parent = self.dropdown
+
+    self.options = options or {}
+    self.callback = callback or function() end
+
+    self.selection = Instance.new("TextButton")
+    self.selection.Size = UDim2.new(1, 0, 0, 30)
+    self.selection.Position = UDim2.new(0, 0, 0, 20)
+    self.selection.Text = options[1] or "Select"
+    self.selection.Parent = self.dropdown
+
+    self.menu = Instance.new("Frame")
+    self.menu.Size = UDim2.new(1, 0, 0, #options * 30)
+    self.menu.Position = UDim2.new(0, 0, 0, 50)
+    self.menu.Visible = false
+    self.menu.Parent = self.dropdown
+
     for i, option in ipairs(options) do
-        local optionButton = Instance.new("TextButton", optionList)
-        optionButton.Text = option
-        optionButton.Size = UDim2.new(1, 0, 0, 50)
-        optionButton.Position = UDim2.new(0, 0, (i - 1) * 50, 0)
-        
-        optionButton.MouseButton1Click:Connect(function()
-            dropdown.Text = option
-            optionList.Visible = false
-            callback(option)
+        local button = Instance.new("TextButton")
+        button.Size = UDim2.new(1, 0, 0, 30)
+        button.Position = UDim2.new(0, 0, 0, (i - 1) * 30)
+        button.Text = option
+        button.Parent = self.menu
+
+        button.MouseButton1Click:Connect(function()
+            self.selection.Text = option
+            self.menu.Visible = false
+            self.callback(option)
         end)
     end
-    
-    dropdown.MouseButton1Click:Connect(function()
-        optionList.Visible = not optionList.Visible
+
+    self.selection.MouseButton1Click:Connect(function()
+        self.menu.Visible = not self.menu.Visible
     end)
-    
-    self:AddElement(parent, dropdownFrame)
-    return dropdownFrame
+
+    return self
 end
 
-function FrostyGUI:CreateTextBox(parent, placeholderText, callback)
-    local textBoxFrame = Instance.new("Frame", parent.frame)
-    textBoxFrame.Size = UDim2.new(1, 0, 0, 50)
-    textBoxFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    
-    local textBox = Instance.new("TextBox", textBoxFrame)
-    textBox.PlaceholderText = placeholderText
-    textBox.Size = UDim2.new(1, 0, 1, 0)
-    textBox.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
-    textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-    textBox.Font = Enum.Font.SourceSans
-    textBox.TextSize = 18
-    
-    textBox.FocusLost:Connect(function(enterPressed)
-        if enterPressed then
-            callback(textBox.Text)
+function Dropdown:AddOption(option)
+    table.insert(self.options, option)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, 0, 0, 30)
+    button.Position = UDim2.new(0, 0, 0, (#self.options - 1) * 30)
+    button.Text = option
+    button.Parent = self.menu
+
+    button.MouseButton1Click:Connect(function()
+        self.selection.Text = option
+        self.menu.Visible = false
+        self.callback(option)
+    end)
+end
+
+function Dropdown:RemoveOption(option)
+    for i, opt in ipairs(self.options) do
+        if opt == option then
+            table.remove(self.options, i)
+            self.menu:ClearAllChildren()
+            for j, newOpt in ipairs(self.options) do
+                local button = Instance.new("TextButton")
+                button.Size = UDim2.new(1, 0, 0, 30)
+                button.Position = UDim2.new(0, 0, 0, (j - 1) * 30)
+                button.Text = newOpt
+                button.Parent = self.menu
+
+                button.MouseButton1Click:Connect(function()
+                    self.selection.Text = newOpt
+                    self.menu.Visible = false
+                    self.callback(newOpt)
+                end)
+            end
+            break
         end
-    end)
-    
-    self:AddElement(parent, textBoxFrame)
-    return textBoxFrame
-end
-
-function FrostyGUI:CreateToggle(parent, text, callback)
-    local toggleFrame = Instance.new("Frame", parent.frame)
-    toggleFrame.Size = UDim2.new(1, 0, 0, 50)
-    toggleFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    
-    local toggle = Instance.new("TextButton", toggleFrame)
-    toggle.Size = UDim2.new(0, 50, 1, 0)
-    toggle.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
-    
-    local toggleLabel = Instance.new("TextLabel", toggleFrame)
-    toggleLabel.Text = text
-    toggleLabel.Size = UDim2.new(1, -60, 1, 0)
-    toggleLabel.Position = UDim2.new(0, 60, 0, 0)
-    toggleLabel.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    toggleLabel.Font = Enum.Font.SourceSans
-    toggleLabel.TextSize = 18
-    
-    local toggled = false
-    toggle.MouseButton1Click:Connect(function()
-        toggled = not toggled
-        if toggled then
-            toggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-        else
-            toggle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-        end
-        callback(toggled)
-    end)
-    
-    self:AddElement(parent, toggleFrame)
-    return toggleFrame
-end
-
-function FrostyGUI:CreateProgressBar(parent, max, callback)
-    local progressBarFrame = Instance.new("Frame", parent.frame)
-    progressBarFrame.Size = UDim2.new(1, 0, 0, 50)
-    progressBarFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    
-    local progressBar = Instance.new("Frame", progressBarFrame)
-    progressBar.Size = UDim2.new(0, 0, 1, 0)
-    progressBar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    
-    local function updateProgressBar(value)
-        local relativeSize = math.clamp(value / max, 0, 1)
-        progressBar.Size = UDim2.new(relativeSize, 0, 1, 0)
-        callback(value)
     end
-    
-    self:AddElement(parent, progressBarFrame)
-    return {
-        setValue = updateProgressBar
-    }
 end
 
-function FrostyGUI:CreateImage(parent, imageId)
-    local imageFrame = Instance.new("Frame", parent.frame)
-    imageFrame.Size = UDim2.new(1, 0, 0, 50)
-    imageFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    
-    local image = Instance.new("ImageLabel", imageFrame)
-    image.Size = UDim2.new(1, 0, 1, 0)
-    image.Image = "rbxassetid://" .. imageId
-    image.BackgroundTransparency = 1
-    
-    self:AddElement(parent, imageFrame)
-    return imageFrame
-end
+FrostGUI.Dropdown = Dropdown
 
-function FrostyGUI:CreateList(parent, items)
-    local listFrame = Instance.new("Frame", parent.frame)
-    listFrame.Size = UDim2.new(1, 0, #items * 50, 0)
-    listFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    
-    for i, item in ipairs(items) do
-        local itemLabel = Instance.new("TextLabel", listFrame)
-        itemLabel.Text = item
-        itemLabel.Size = UDim2.new(1, 0, 0, 50)
-        itemLabel.Position = UDim2.new(0, 0, (i - 1) * 50, 0)
-        itemLabel.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
-        itemLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        itemLabel.Font = Enum.Font.SourceSans
-        itemLabel.TextSize = 18
-    end
-    
-    self:AddElement(parent, listFrame)
-    return listFrame
-end
-
-function FrostyGUI:CreateScrollableFrame(parent, height)
-    local scrollFrame = Instance.new("ScrollingFrame", parent.frame)
-    scrollFrame.Size = UDim2.new(1, 0, 0, height)
-    scrollFrame.CanvasSize = UDim2.new(1, 0, 0, height)
-    scrollFrame.ScrollBarThickness = 10
-    scrollFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    
-    parent.yOffset = parent.yOffset + height + 10
-    table.insert(parent.elements, scrollFrame)
-    return scrollFrame
-end
-
-function FrostyGUI:CreateScrollableList(parent, items, height)
-    local scrollFrame = self:CreateScrollableFrame(parent, height)
-    
-    for i, item in ipairs(items) do
-        local itemLabel = Instance.new("TextLabel", scrollFrame)
-        itemLabel.Text = item
-        itemLabel.Size = UDim2.new(1, 0, 0, 50)
-        itemLabel.Position = UDim2.new(0, 0, (i - 1) * 50, 0)
-        itemLabel.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
-        itemLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        itemLabel.Font = Enum.Font.SourceSans
-        itemLabel.TextSize = 18
-    end
-    
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, #items * 50)
-    return scrollFrame
-end
-
-return FrostyGUI
+-- Return the library
+return FrostGUI
