@@ -14,18 +14,64 @@ function FrostyGUI:CreateWindow(title)
     window.frame.Size = UDim2.new(0.5, 0, 0.5, 0)
     window.frame.Position = UDim2.new(0.25, 0, 0.25, 0)
     window.frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    window.frame.BorderSizePixel = 2
+    window.frame.BorderColor3 = Color3.fromRGB(255, 255, 255)
     
     local titleLabel = Instance.new("TextLabel", window.frame)
     titleLabel.Text = title
     titleLabel.Size = UDim2.new(1, 0, 0, 50)
     titleLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titleLabel.Font = Enum.Font.SourceSansBold
+    titleLabel.TextSize = 24
+    
+    -- Enable dragging
+    local dragging = false
+    local dragInput, mousePos, framePos
+
+    local function update(input)
+        local delta = input.Position - mousePos
+        window.frame.Position = UDim2.new(
+            math.clamp(framePos.X.Scale + delta.X / window.gui.AbsoluteSize.X, 0, 1 - window.frame.Size.X.Scale),
+            framePos.X.Offset,
+            math.clamp(framePos.Y.Scale + delta.Y / window.gui.AbsoluteSize.Y, 0, 1 - window.frame.Size.Y.Scale),
+            framePos.Y.Offset
+        )
+    end
+
+    window.frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            mousePos = input.Position
+            framePos = window.frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    window.frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
     
     return window
 end
 
 function FrostyGUI:AddElement(parent, element)
-    element.Position = UDim2.new(0, 0, 0, parent.yOffset)
-    parent.yOffset = parent.yOffset + 60
+    element.Position = UDim2.new(0, 10, 0, parent.yOffset)
+    element.Size = UDim2.new(1, -20, 0, 40)
+    parent.yOffset = parent.yOffset + 50
     table.insert(parent.elements, element)
 end
 
@@ -34,6 +80,9 @@ function FrostyGUI:CreateButton(parent, text, callback)
     button.Text = text
     button.Size = UDim2.new(1, 0, 0, 50)
     button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.Font = Enum.Font.SourceSans
+    button.TextSize = 18
     
     button.MouseButton1Click:Connect(callback)
     self:AddElement(parent, button)
@@ -45,6 +94,9 @@ function FrostyGUI:CreateLabel(parent, text)
     label.Text = text
     label.Size = UDim2.new(1, 0, 0, 50)
     label.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 18
     
     self:AddElement(parent, label)
     return label
@@ -126,6 +178,117 @@ function FrostyGUI:CreateDropdown(parent, options, callback)
     
     self:AddElement(parent, dropdownFrame)
     return dropdownFrame
+end
+
+function FrostyGUI:CreateTextBox(parent, placeholderText, callback)
+    local textBoxFrame = Instance.new("Frame", parent.frame)
+    textBoxFrame.Size = UDim2.new(1, 0, 0, 50)
+    textBoxFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    
+    local textBox = Instance.new("TextBox", textBoxFrame)
+    textBox.PlaceholderText = placeholderText
+    textBox.Size = UDim2.new(1, 0, 1, 0)
+    textBox.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
+    textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textBox.Font = Enum.Font.SourceSans
+    textBox.TextSize = 18
+    
+    textBox.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            callback(textBox.Text)
+        end
+    end)
+    
+    self:AddElement(parent, textBoxFrame)
+    return textBoxFrame
+end
+
+function FrostyGUI:CreateToggle(parent, text, callback)
+    local toggleFrame = Instance.new("Frame", parent.frame)
+    toggleFrame.Size = UDim2.new(1, 0, 0, 50)
+    toggleFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    
+    local toggle = Instance.new("TextButton", toggleFrame)
+    toggle.Size = UDim2.new(0, 50, 1, 0)
+    toggle.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
+    
+    local toggleLabel = Instance.new("TextLabel", toggleFrame)
+    toggleLabel.Text = text
+    toggleLabel.Size = UDim2.new(1, -60, 1, 0)
+    toggleLabel.Position = UDim2.new(0, 60, 0, 0)
+    toggleLabel.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    toggleLabel.Font = Enum.Font.SourceSans
+    toggleLabel.TextSize = 18
+    
+    local toggled = false
+    toggle.MouseButton1Click:Connect(function()
+        toggled = not toggled
+        if toggled then
+            toggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        else
+            toggle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        end
+        callback(toggled)
+    end)
+    
+    self:AddElement(parent, toggleFrame)
+    return toggleFrame
+end
+
+function FrostyGUI:CreateProgressBar(parent, max, callback)
+    local progressBarFrame = Instance.new("Frame", parent.frame)
+    progressBarFrame.Size = UDim2.new(1, 0, 0, 50)
+    progressBarFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    
+    local progressBar = Instance.new("Frame", progressBarFrame)
+    progressBar.Size = UDim2.new(0, 0, 1, 0)
+    progressBar.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+    
+    local function updateProgressBar(value)
+        local relativeSize = math.clamp(value / max, 0, 1)
+        progressBar.Size = UDim2.new(relativeSize, 0, 1, 0)
+        callback(value)
+    end
+    
+    self:AddElement(parent, progressBarFrame)
+    return {
+        setValue = updateProgressBar
+    }
+end
+
+function FrostyGUI:CreateImage(parent, imageId)
+    local imageFrame = Instance.new("Frame", parent.frame)
+    imageFrame.Size = UDim2.new(1, 0, 0, 50)
+    imageFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    
+    local image = Instance.new("ImageLabel", imageFrame)
+    image.Size = UDim2.new(1, 0, 1, 0)
+    image.Image = "rbxassetid://" .. imageId
+    image.BackgroundTransparency = 1
+    
+    self:AddElement(parent, imageFrame)
+    return imageFrame
+end
+
+function FrostyGUI:CreateList(parent, items)
+    local listFrame = Instance.new("Frame", parent.frame)
+    listFrame.Size = UDim2.new(1, 0, #items * 50, 0)
+    listFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    
+    for i, item in ipairs(items) do
+        local itemLabel = Instance.new("TextLabel", listFrame)
+        itemLabel.Text = item
+        itemLabel.Size = UDim2.new(1, 0, 0, 50)
+        itemLabel.Position = UDim2.new(0, 0, (i - 1) * 50, 0)
+        itemLabel.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
+        itemLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        itemLabel.Font = Enum.Font.SourceSans
+        itemLabel.TextSize = 18
+    end
+    
+    self:AddElement(parent, listFrame)
+    return listFrame
 end
 
 return FrostyGUI
