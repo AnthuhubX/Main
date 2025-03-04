@@ -1,0 +1,49 @@
+-- FrostyGUI.lua
+local FrostyGUI = {}
+FrostyGUI.__index = FrostyGUI
+
+function FrostyGUI:CreateWindow(title)
+    local window = {}
+    setmetatable(window, FrostyGUI)
+    window.title = title
+    window.elements = {}
+    
+    -- Additional window properties and methods
+    -- Example: Create a ScreenGui and Frame for the window
+    window.gui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
+    window.frame = Instance.new("Frame", window.gui)
+    window.frame.Size = UDim2.new(0.5, 0, 0.5, 0)
+    window.frame.Position = UDim2.new(0.25, 0, 0.25, 0)
+    window.frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    
+    local titleLabel = Instance.new("TextLabel", window.frame)
+    titleLabel.Text = title
+    titleLabel.Size = UDim2.new(1, 0, 0, 50)
+    titleLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    
+    return window
+end
+
+function FrostyGUI:CreateButton(parent, text, callback)
+    local button = Instance.new("TextButton", parent.frame)
+    button.Text = text
+    button.Size = UDim2.new(1, 0, 0, 50)
+    button.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    
+    button.MouseButton1Click:Connect(callback)
+    
+    table.insert(parent.elements, button)
+    return button
+end
+
+function FrostyGUI:CreateLabel(parent, text)
+    local label = Instance.new("TextLabel", parent.frame)
+    label.Text = text
+    label.Size = UDim2.new(1, 0, 0, 50)
+    label.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    
+    table.insert(parent.elements, label)
+    return label
+end
+
+return FrostyGUI
