@@ -1,6 +1,8 @@
--- FrostGUI Library
+ary
+return FrostGUI
+-- FrostyUI Library
 
-local FrostGUI = {}
+local FrostyUI = {}
 
 -- Button Component
 local Button = {}
@@ -29,7 +31,7 @@ function Button:SetPosition(newPosition)
     self.button.Position = newPosition
 end
 
-FrostGUI.Button = Button
+FrostyUI.Button = Button
 
 -- Label Component
 local Label = {}
@@ -58,7 +60,7 @@ function Label:SetPosition(newPosition)
     self.label.Position = newPosition
 end
 
-FrostGUI.Label = Label
+FrostyUI.Label = Label
 
 -- Window Component
 local Window = {}
@@ -98,7 +100,7 @@ function Window:SetPosition(newPosition)
     self.window.Position = newPosition
 end
 
-FrostGUI.Window = Window
+FrostyUI.Window = Window
 
 -- Toggle Component
 local Toggle = {}
@@ -138,7 +140,7 @@ function Toggle:Update()
     end
 end
 
-FrostGUI.Toggle = Toggle
+FrostyUI.Toggle = Toggle
 
 -- Slider Component
 local Slider = {}
@@ -195,7 +197,7 @@ function Slider.new(text, min, max, default, callback)
     return self
 end
 
-FrostGUI.Slider = Slider
+FrostyUI.Slider = Slider
 
 -- Dropdown Component
 local Dropdown = {}
@@ -291,7 +293,7 @@ function Dropdown:RemoveOption(option)
     end
 end
 
-FrostGUI.Dropdown = Dropdown
+FrostyUI.Dropdown = Dropdown
 
 -- Return the library
-return FrostGUI
+return FrostyUI
