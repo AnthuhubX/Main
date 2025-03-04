@@ -56,20 +56,30 @@ function FrostyGUI:CreateSlider(parent, min, max, callback)
     slider.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
     
     local dragging = false
-    slider.MouseButton1Down:Connect(function()
-        dragging = true
+    
+    local function updateSlider(input)
+        local relativePos = math.clamp((input.Position.X - sliderFrame.AbsolutePosition.X) / sliderFrame.AbsoluteSize.X, 0, 1)
+        slider.Position = UDim2.new(relativePos, 0, 0, 0)
+        local value = min + (max - min) * relativePos
+        callback(value)
+    end
+
+    slider.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            updateSlider(input)
+        end
     end)
     
-    slider.MouseButton1Up:Connect(function()
-        dragging = false
+    slider.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
     end)
     
-    slider.MouseMoved:Connect(function(x)
-        if dragging then
-            local relativePos = math.clamp((x - sliderFrame.AbsolutePosition.X) / sliderFrame.AbsoluteSize.X, 0, 1)
-            slider.Position = UDim2.new(relativePos, 0, 0, 0)
-            local value = min + (max - min) * relativePos
-            callback(value)
+    slider.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            updateSlider(input)
         end
     end)
     
