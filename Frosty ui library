@@ -1,302 +1,175 @@
--- FrostyUI Library
+-- SoulUI Library
+local SoulUI = {}
 
-local FrostyUI = {}
-
--- Button Component
-local Button = {}
-Button.__index = Button
-
-function Button.new(text, size, position)
-    local self = setmetatable({}, Button)
-
-    -- Create the button
-    self.button = Instance.new("TextButton")
-    self.button.Size = size or UDim2.new(0, 100, 0, 50)
-    self.button.Position = position or UDim2.new(0, 0, 0, 0)
-    self.button.Text = text or "Button"
-    self.button.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
-    self.button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    self.button.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-
-    -- Adjust for mobile
-    self.button.TouchTap:Connect(function()
-        print("Button tapped")
-    end)
-
-    return self
+-- Function to create a ScreenGui
+function SoulUI:createScreenGui(name)
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = name or "SoulUI"
+    screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    return screenGui
 end
 
-function Button:SetText(newText)
-    self.button.Text = newText
+-- Function to create a Frame
+function SoulUI:createFrame(parent, name, position, size, bgColor)
+    local frame = Instance.new("Frame")
+    frame.Name = name or "Frame"
+    frame.Position = position or UDim2.new(0.5, 0, 0.5, 0)
+    frame.Size = size or UDim2.new(0.3, 0, 0.3, 0)
+    frame.BackgroundColor3 = bgColor or Color3.fromRGB(255, 255, 255)
+    frame.Parent = parent
+    return frame
 end
 
-function Button:SetPosition(newPosition)
-    self.button.Position = newPosition
+-- Function to create a TextLabel
+function SoulUI:createTextLabel(parent, name, text, position, size, textColor)
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Name = name or "TextLabel"
+    textLabel.Text = text or "Default Text"
+    textLabel.Position = position or UDim2.new(0.5, 0, 0.5, 0)
+    textLabel.Size = size or UDim2.new(0.2, 0, 0.1, 0)
+    textLabel.TextColor3 = textColor or Color3.fromRGB(0, 0, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Parent = parent
+    return textLabel
 end
 
-FrostyUI.Button = Button
-
--- Label Component
-local Label = {}
-Label.__index = Label
-
-function Label.new(text, size, position)
-    local self = setmetatable({}, Label)
-
-    -- Create the label
-    self.label = Instance.new("TextLabel")
-    self.label.Size = size or UDim2.new(0, 100, 0, 50)
-    self.label.Position = position or UDim2.new(0, 0, 0, 0)
-    self.label.Text = text or "Label"
-    self.label.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    self.label.TextColor3 = Color3.fromRGB(0, 0, 0)
-    self.label.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-
-    return self
+-- Function to create a Button
+function SoulUI:createButton(parent, name, text, position, size, bgColor, textColor)
+    local button = Instance.new("TextButton")
+    button.Name = name or "Button"
+    button.Text = text or "Click Me"
+    button.Position = position or UDim2.new(0.5, 0, 0.5, 0)
+    button.Size = size or UDim2.new(0.2, 0, 0.1, 0)
+    button.BackgroundColor3 = bgColor or Color3.fromRGB(0, 0, 255)
+    button.TextColor3 = textColor or Color3.fromRGB(255, 255, 255)
+    button.Parent = parent
+    return button
 end
 
-function Label:SetText(newText)
-    self.label.Text = newText
-end
-
-function Label:SetPosition(newPosition)
-    self.label.Position = newPosition
-end
-
-FrostyUI.Label = Label
-
--- Window Component
-local Window = {}
-Window.__index = Window
-
-function Window.new(title, size, position)
-    local self = setmetatable({}, Window)
-
-    -- Create the window frame
-    self.window = Instance.new("Frame")
-    self.window.Size = size or UDim2.new(0, 300, 0, 200)
-    self.window.Position = position or UDim2.new(0, 0, 0, 0)
-    self.window.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    self.window.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-
-    -- Create the title label
-    self.titleLabel = Instance.new("TextLabel")
-    self.titleLabel.Size = UDim2.new(1, 0, 0, 30)
-    self.titleLabel.Position = UDim2.new(0, 0, 0, 0)
-    self.titleLabel.Text = title or "Window"
-    self.titleLabel.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    self.titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    self.titleLabel.Parent = self.window
-
-    return self
-end
-
-function Window:AddChild(child)
-    child.Parent = self.window
-end
-
-function Window:SetTitle(newTitle)
-    self.titleLabel.Text = newTitle
-end
-
-function Window:SetPosition(newPosition)
-    self.window.Position = newPosition
-end
-
-FrostyUI.Window = Window
-
--- Toggle Component
-local Toggle = {}
-Toggle.__index = Toggle
-
-function Toggle.new(text, default, callback)
-    local self = setmetatable({}, Toggle)
-
-    -- Create the toggle
-    self.toggle = Instance.new("TextButton")
-    self.toggle.Size = UDim2.new(0, 100, 0, 50)
-    self.toggle.Position = UDim2.new(0, 0, 0, 0)
-    self.toggle.Text = text or "Toggle"
-    self.toggle.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
-    self.toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    self.toggle.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+-- Function to create a Toggle
+function SoulUI:createToggle(parent, name, text, position, size, bgColor, textColor, callback)
+    local toggle = Instance.new("TextButton")
+    toggle.Name = name or "Toggle"
+    toggle.Text = text or "Toggle"
+    toggle.Position = position or UDim2.new(0.5, 0, 0.5, 0)
+    toggle.Size = size or UDim2.new(0.2, 0, 0.1, 0)
+    toggle.BackgroundColor3 = bgColor or Color3.fromRGB(0, 0, 255)
+    toggle.TextColor3 = textColor or Color3.fromRGB(255, 255, 255)
+    toggle.Parent = parent
     
-    self.state = default or false
-    self.callback = callback or function() end
-
-    self.toggle.MouseButton1Click:Connect(function()
-        self.state = not self.state
-        self:Update()
-        self.callback(self.state)
-    end)
-
-    self:Update()
+    local state = false
     
-    return self
+    toggle.MouseButton1Click:Connect(function()
+        state = not state
+        toggle.BackgroundColor3 = state and Color3.fromRGB(0, 255, 0) or bgColor
+        if callback then callback(state) end
+    end)
+    
+    return toggle
 end
 
-function Toggle:Update()
-    if self.state then
-        self.toggle.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-    else
-        self.toggle.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-    end
+-- Function to create a Slider
+function SoulUI:createSlider(parent, name, text, position, size, bgColor, min, max, callback)
+    local slider = Instance.new("Frame")
+    slider.Name = name or "Slider"
+    slider.Position = position or UDim2.new(0.5, 0, 0.5, 0)
+    slider.Size = size or UDim2.new(0.4, 0, 0.1, 0)
+    slider.BackgroundColor3 = bgColor or Color3.fromRGB(255, 255, 255)
+    slider.Parent = parent
+    
+    local label = Instance.new("TextLabel")
+    label.Name = "Label"
+    label.Text = text or "Slider"
+    label.Size = UDim2.new(1, 0, 0.5, 0)
+    label.TextColor3 = Color3.fromRGB(0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Parent = slider
+    
+    local knob = Instance.new("Frame")
+    knob.Name = "Knob"
+    knob.Size = UDim2.new(0.1, 0, 1, 0)
+    knob.Position = UDim2.new(0, 0, 0, 0)
+    knob.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
+    knob.Parent = slider
+    
+    local dragging = false
+    knob.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+        end
+    end)
+    
+    knob.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    slider.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local relativePos = (input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X
+            knob.Position = UDim2.new(math.clamp(relativePos, 0, 1), 0, 0, 0)
+            if callback then callback(math.clamp(relativePos * (max - min) + min, min, max)) end
+        end
+    end)
+    
+    return slider
 end
 
-FrostyUI.Toggle = Toggle
-
--- Slider Component
-local Slider = {}
-Slider.__index = Slider
-
-function Slider.new(text, min, max, default, callback)
-    local self = setmetatable({}, Slider)
-
-    -- Create the slider
-    self.slider = Instance.new("Frame")
-    self.slider.Size = UDim2.new(0, 200, 0, 50)
-    self.slider.Position = UDim2.new(0, 0, 0, 0)
-    self.slider.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
-    self.slider.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-
-    self.min = min or 0
-    self.max = max or 100
-    self.value = default or min
-    self.callback = callback or function() end
-
-    self.label = Instance.new("TextLabel")
-    self.label.Size = UDim2.new(1, 0, 0, 20)
-    self.label.Position = UDim2.new(0, 0, 0, 0)
-    self.label.Text = text or "Slider"
-    self.label.Parent = self.slider
-
-    self.knob = Instance.new("Frame")
-    self.knob.Size = UDim2.new(0, 10, 0, 30)
-    self.knob.Position = UDim2.new((self.value - self.min) / (self.max - self.min), 0, 0.5, -15)
-    self.knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    self.knob.Parent = self.slider
-
-    self.knob.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            self.dragging = true
-        end
+-- Function to create a Dropdown
+function SoulUI:createDropdown(parent, name, text, position, size, bgColor, options, callback)
+    local dropdown = Instance.new("Frame")
+    dropdown.Name = name or "Dropdown"
+    dropdown.Position = position or UDim2.new(0.5, 0, 0.5, 0)
+    dropdown.Size = size or UDim2.new(0.3, 0, 0.2, 0)
+    dropdown.BackgroundColor3 = bgColor or Color3.fromRGB(255, 255, 255)
+    dropdown.Parent = parent
+    
+    local label = Instance.new("TextLabel")
+    label.Name = "Label"
+    label.Text = text or "Dropdown"
+    label.Size = UDim2.new(1, 0, 0.3, 0)
+    label.TextColor3 = Color3.fromRGB(0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Parent = dropdown
+    
+    local selection = Instance.new("TextButton")
+    selection.Name = "Selection"
+    selection.Text = options[1] or "Select"
+    selection.Size = UDim2.new(1, 0, 0.7, 0)
+    selection.Position = UDim2.new(0, 0, 0.3, 0)
+    selection.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+    selection.Parent = dropdown
+    
+    local menu = Instance.new("Frame")
+    menu.Name = "Menu"
+    menu.Size = UDim2.new(1, 0, #options * 0.7, 0)
+    menu.Position = UDim2.new(0, 0, 1, 0)
+    menu.Visible = false
+    menu.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    menu.Parent = dropdown
+    
+    selection.MouseButton1Click:Connect(function()
+        menu.Visible = not menu.Visible
     end)
-
-    self.knob.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            self.dragging = false
-        end
-    end)
-
-    self.slider.InputChanged:Connect(function(input)
-        if self.dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-            local relativePos = (input.Position.X - self.slider.AbsolutePosition.X) / self.slider.AbsoluteSize.X
-            self.value = math.clamp(relativePos * (self.max - self.min) + self.min, self.min, self.max)
-            self.knob.Position = UDim2.new((self.value - self.min) / (self.max - self.min), 0, 0.5, -15)
-            self.callback(self.value)
-        end
-    end)
-
-    return self
-end
-
-FrostyUI.Slider = Slider
-
--- Dropdown Component
-local Dropdown = {}
-Dropdown.__index = Dropdown
-
-function Dropdown.new(text, options, callback)
-    local self = setmetatable({}, Dropdown)
-
-    -- Create the dropdown
-    self.dropdown = Instance.new("Frame")
-    self.dropdown.Size = UDim2.new(0, 200, 0, 50)
-    self.dropdown.Position = UDim2.new(0, 0, 0, 0)
-    self.dropdown.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
-    self.dropdown.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-
-    self.label = Instance.new("TextLabel")
-    self.label.Size = UDim2.new(1, 0, 0, 20)
-    self.label.Position = UDim2.new(0, 0, 0, 0)
-    self.label.Text = text or "Dropdown"
-    self.label.Parent = self.dropdown
-
-    self.options = options or {}
-    self.callback = callback or function() end
-
-    self.selection = Instance.new("TextButton")
-    self.selection.Size = UDim2.new(1, 0, 0, 30)
-    self.selection.Position = UDim2.new(0, 0, 0, 20)
-    self.selection.Text = options[1] or "Select"
-    self.selection.Parent = self.dropdown
-
-    self.menu = Instance.new("Frame")
-    self.menu.Size = UDim2.new(1, 0, 0, #options * 30)
-    self.menu.Position = UDim2.new(0, 0, 0, 50)
-    self.menu.Visible = false
-    self.menu.Parent = self.dropdown
-
+    
     for i, option in ipairs(options) do
         local button = Instance.new("TextButton")
-        button.Size = UDim2.new(1, 0, 0, 30)
-        button.Position = UDim2.new(0, 0, 0, (i - 1) * 30)
+        button.Name = "Option" .. i
         button.Text = option
-        button.Parent = self.menu
-
+        button.Size = UDim2.new(1, 0, 1 / #options, 0)
+        button.Position = UDim2.new(0, 0, (i - 1) / #options, 0)
+        button.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+        button.Parent = menu
+        
         button.MouseButton1Click:Connect(function()
-            self.selection.Text = option
-            self.menu.Visible = false
-            self.callback(option)
+            selection.Text = option
+            menu.Visible = false
+            if callback then callback(option) end
         end)
     end
-
-    self.selection.MouseButton1Click:Connect(function()
-        self.menu.Visible = not self.menu.Visible
-    end)
-
-    return self
+    
+    return dropdown
 end
 
-function Dropdown:AddOption(option)
-    table.insert(self.options, option)
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(1, 0, 0, 30)
-    button.Position = UDim2.new(0, 0, 0, (#self.options - 1) * 30)
-    button.Text = option
-    button.Parent = self.menu
-
-    button.MouseButton1Click:Connect(function()
-        self.selection.Text = option
-        self.menu.Visible = false
-        self.callback(option)
-    end)
-end
-
-function Dropdown:RemoveOption(option)
-    for i, opt in ipairs(self.options) do
-        if opt == option then
-            table.remove(self.options, i)
-            self.menu:ClearAllChildren()
-            for j, newOpt in ipairs(self.options) do
-                local button = Instance.new("TextButton")
-                button.Size = UDim2.new(1, 0, 0, 30)
-                button.Position = UDim2.new(0, 0, 0, (j - 1) * 30)
-                button.Text = newOpt
-                button.Parent = self.menu
-
-                button.MouseButton1Click:Connect(function()
-                    self.selection.Text = newOpt
-                    self.menu.Visible = false
-                    self.callback(newOpt)
-                end)
-            end
-            break
-        end
-    end
-end
-
-FrostyUI.Dropdown = Dropdown
-
--- Return the library
-return FrostyUI
+return SoulUI
