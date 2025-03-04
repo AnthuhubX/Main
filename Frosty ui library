@@ -291,4 +291,34 @@ function FrostyGUI:CreateList(parent, items)
     return listFrame
 end
 
+function FrostyGUI:CreateScrollableFrame(parent, height)
+    local scrollFrame = Instance.new("ScrollingFrame", parent.frame)
+    scrollFrame.Size = UDim2.new(1, 0, 0, height)
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, height)
+    scrollFrame.ScrollBarThickness = 10
+    scrollFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    
+    parent.yOffset = parent.yOffset + height + 10
+    table.insert(parent.elements, scrollFrame)
+    return scrollFrame
+end
+
+function FrostyGUI:CreateScrollableList(parent, items, height)
+    local scrollFrame = self:CreateScrollableFrame(parent, height)
+    
+    for i, item in ipairs(items) do
+        local itemLabel = Instance.new("TextLabel", scrollFrame)
+        itemLabel.Text = item
+        itemLabel.Size = UDim2.new(1, 0, 0, 50)
+        itemLabel.Position = UDim2.new(0, 0, (i - 1) * 50, 0)
+        itemLabel.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
+        itemLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        itemLabel.Font = Enum.Font.SourceSans
+        itemLabel.TextSize = 18
+    end
+    
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, #items * 50)
+    return scrollFrame
+end
+
 return FrostyGUI
