@@ -294,7 +294,7 @@ end
 function FrostyGUI:CreateScrollableFrame(parent, height)
     local scrollFrame = Instance.new("ScrollingFrame", parent.frame)
     scrollFrame.Size = UDim2.new(1, 0, 0, height)
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, height)
+    scrollFrame.CanvasSize = UDim2.new(1, 0, 0, height)
     scrollFrame.ScrollBarThickness = 10
     scrollFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
     
