@@ -1,0 +1,1970 @@
+--[[
+    Frosty UI Library v1.0
+    Inspired by Rayfield and Orion UI libraries
+    Created for Roblox
+]]
+
+local Frosty = {}
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+-- Utility functions
+local function Create(instanceType)
+    return function(properties)
+        local instance = Instance.new(instanceType)
+        for property, value in pairs(properties) do
+            instance[property] = value
+        end
+        return instance
+    end
+end
+
+local function Tween(instance, properties, time, easingStyle, easingDirection)
+    local tween = TweenService:Create(
+        instance,
+        TweenInfo.new(time or 0.5, easingStyle or Enum.EasingStyle.Quad, easingDirection or Enum.EasingDirection.Out),
+        properties
+    )
+    tween:Play()
+    return tween
+end
+
+local function Round(number, decimalPlaces)
+    local multiplier = 10 ^ (decimalPlaces or 0)
+    return math.floor(number * multiplier + 0.5) / multiplier
+end
+
+local function IsInBounds(position, frame)
+    local xBounds = position.X >= frame.AbsolutePosition.X and position.X <= frame.AbsolutePosition.X + frame.AbsoluteSize.X
+    local yBounds = position.Y >= frame.AbsolutePosition.Y and position.Y <= frame.AbsolutePosition.Y + frame.AbsoluteSize.Y
+    return xBounds and yBounds
+end
+
+-- Constants
+local FrostyUI = {
+    Name = "Frosty",
+    Theme = {
+        Primary = Color3.fromRGB(25, 35, 45),
+        Secondary = Color3.fromRGB(30, 40, 50),
+        Accent = Color3.fromRGB(80, 160, 255),
+        Text = Color3.fromRGB(240, 240, 240),
+        Disabled = Color3.fromRGB(100, 100, 100),
+        DarkContrast = Color3.fromRGB(15, 25, 35),
+        LightContrast = Color3.fromRGB(40, 50, 60)
+    },
+    Font = Enum.Font.GothamSemibold,
+    Defaults = {
+        CornerRadius = UDim.new(0, 6),
+        StrokeThickness = 1,
+        Duration = 0.25
+    }
+}
+
+-- Create UI Container
+function Frosty:CreateWindow(config)
+    config = config or {}
+    config.Name = config.Name or "Frosty UI"
+    config.IntroEnabled = config.IntroEnabled ~= nil and config.IntroEnabled or true
+    config.IntroText = config.IntroText or "Frosty UI"
+    config.IntroIcon = config.IntroIcon or "rbxassetid://10618644218"
+    config.IntroBlur = config.IntroBlur ~= nil and config.IntroBlur or true
+    config.IntroBlurIntensity = config.IntroBlurIntensity or 15
+    config.Theme = config.Theme or FrostyUI.Theme
+    config.Position = config.Position or UDim2.new(0.5, -250, 0.5, -300)
+    config.Size = config.Size or UDim2.new(0, 500, 0, 600)
+    config.KeySystem = config.KeySystem ~= nil and config.KeySystem or false
+    config.Key = config.Key or {"Frosty"}
+    config.KeyCallback = config.KeyCallback or function() end
+    
+    -- Clean up previous UI
+    pcall(function()
+        for _, instance in pairs(CoreGui:GetChildren()) do
+            if instance.Name == "FrostyUI" then
+                instance:Destroy()
+            end
+        end
+    end)
+    
+    local Window = {}
+    Window.Tabs = {}
+    Window.ElementCount = 0
+    Window.Initialized = false
+    Window.Config = config
+    
+    -- Main GUI container
+    local FrostyContainer = Create("ScreenGui"){
+        Name = "FrostyUI",
+        Parent = CoreGui,
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    }
+    
+    -- Create blur effect if enabled
+    local BlurEffect = nil
+    if config.IntroBlur then
+        BlurEffect = Create("BlurEffect"){
+            Name = "FrostyBlur",
+            Parent = game:GetService("Lighting"),
+            Size = 0
+        }
+    end
+    
+    -- Create intro sequence if enabled
+    if config.IntroEnabled then
+        local IntroFrame = Create("Frame"){
+            Name = "IntroFrame",
+            Parent = FrostyContainer,
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundColor3 = FrostyUI.Theme.Primary,
+            BackgroundTransparency = 1,
+            ZIndex = 100
+        }
+        
+        local IntroLogo = Create("ImageLabel"){
+            Name = "IntroLogo",
+            Parent = IntroFrame,
+            Size = UDim2.new(0, 150, 0, 150),
+            BackgroundTransparency = 1,
+            Image = config.IntroIcon,
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 0, 0.4, 0),
+            ImageTransparency = 1,
+            ZIndex = 101
+        }
+        
+        local IntroText = Create("TextLabel"){
+            Name = "IntroText",
+            Parent = IntroFrame,
+            Size = UDim2.new(0, 200, 0, 30),
+            BackgroundTransparency = 1,
+            Text = config.IntroText,
+            Font = FrostyUI.Font,
+            TextSize = 24,
+            TextColor3 = FrostyUI.Theme.Text,
+            AnchorPoint = Vector2.new(0.5, 0),
+            Position = UDim2.new(0.5, 0, 0.6, 0),
+            TextTransparency = 1,
+            ZIndex = 101
+        }
+        
+        -- Animate intro
+        Tween(IntroFrame, {BackgroundTransparency = 0}, 0.5)
+        wait(0.5)
+        
+        if BlurEffect then
+            Tween(BlurEffect, {Size = config.IntroBlurIntensity}, 0.5)
+        end
+        
+        Tween(IntroLogo, {ImageTransparency = 0}, 0.5)
+        wait(0.2)
+        Tween(IntroText, {TextTransparency = 0}, 0.5)
+        
+        wait(1.5)
+        
+        Tween(IntroLogo, {ImageTransparency = 1}, 0.5)
+        Tween(IntroText, {TextTransparency = 1}, 0.5)
+        wait(0.5)
+        Tween(IntroFrame, {BackgroundTransparency = 1}, 0.5)
+        
+        wait(0.5)
+        IntroFrame:Destroy()
+    end
+    
+    -- Create key system if enabled
+    if config.KeySystem then
+        local KeyFrame = Create("Frame"){
+            Name = "KeyFrame",
+            Parent = FrostyContainer,
+            Size = UDim2.new(0, 300, 0, 200),
+            BackgroundColor3 = FrostyUI.Theme.Primary,
+            Position = UDim2.new(0.5, -150, 0.5, -100),
+            AnchorPoint = Vector2.new(0, 0),
+            ZIndex = 100
+        }
+        
+        local KeyCorner = Create("UICorner"){
+            Parent = KeyFrame,
+            CornerRadius = FrostyUI.Defaults.CornerRadius
+        }
+        
+        local KeyStroke = Create("UIStroke"){
+            Parent = KeyFrame,
+            Color = FrostyUI.Theme.Accent,
+            Thickness = FrostyUI.Defaults.StrokeThickness
+        }
+        
+        local KeyTitle = Create("TextLabel"){
+            Name = "KeyTitle",
+            Parent = KeyFrame,
+            Size = UDim2.new(1, 0, 0, 30),
+            BackgroundTransparency = 1,
+            Text = "Key System",
+            Font = FrostyUI.Font,
+            TextSize = 18,
+            TextColor3 = FrostyUI.Theme.Text,
+            Position = UDim2.new(0, 0, 0, 10)
+        }
+        
+        local KeyDescription = Create("TextLabel"){
+            Name = "KeyDescription",
+            Parent = KeyFrame,
+            Size = UDim2.new(1, -20, 0, 20),
+            BackgroundTransparency = 1,
+            Text = "Please enter your key to access the UI",
+            Font = FrostyUI.Font,
+            TextSize = 14,
+            TextColor3 = FrostyUI.Theme.Text,
+            Position = UDim2.new(0, 10, 0, 40),
+            TextXAlignment = Enum.TextXAlignment.Center
+        }
+        
+        local KeyInput = Create("TextBox"){
+            Name = "KeyInput",
+            Parent = KeyFrame,
+            Size = UDim2.new(1, -40, 0, 30),
+            Position = UDim2.new(0, 20, 0, 70),
+            BackgroundColor3 = FrostyUI.Theme.Secondary,
+            Text = "",
+            PlaceholderText = "Enter key...",
+            Font = FrostyUI.Font,
+            TextSize = 14,
+            TextColor3 = FrostyUI.Theme.Text,
+            PlaceholderColor3 = FrostyUI.Theme.Disabled,
+            ClearTextOnFocus = false
+        }
+        
+        local KeyInputCorner = Create("UICorner"){
+            Parent = KeyInput,
+            CornerRadius = FrostyUI.Defaults.CornerRadius
+        }
+        
+        local KeySubmit = Create("TextButton"){
+            Name = "KeySubmit",
+            Parent = KeyFrame,
+            Size = UDim2.new(0, 100, 0, 30),
+            Position = UDim2.new(0.5, -50, 0, 120),
+            BackgroundColor3 = FrostyUI.Theme.Accent,
+            Text = "Submit",
+            Font = FrostyUI.Font,
+            TextSize = 14,
+            TextColor3 = FrostyUI.Theme.Text,
+            AutoButtonColor = false
+        }
+        
+        local KeySubmitCorner = Create("UICorner"){
+            Parent = KeySubmit,
+            CornerRadius = FrostyUI.Defaults.CornerRadius
+        }
+        
+        local KeyStatus = Create("TextLabel"){
+            Name = "KeyStatus",
+            Parent = KeyFrame,
+            Size = UDim2.new(1, -20, 0, 20),
+            BackgroundTransparency = 1,
+            Text = "",
+            Font = FrostyUI.Font,
+            TextSize = 14,
+            TextColor3 = Color3.fromRGB(255, 75, 75),
+            Position = UDim2.new(0, 10, 0, 160),
+            TextXAlignment = Enum.TextXAlignment.Center
+        }
+        
+        -- Button hover and click effects
+        KeySubmit.MouseEnter:Connect(function()
+            Tween(KeySubmit, {BackgroundColor3 = FrostyUI.Theme.Accent:Lerp(Color3.fromRGB(255, 255, 255), 0.2)}, 0.2)
+        end)
+        
+        KeySubmit.MouseLeave:Connect(function()
+            Tween(KeySubmit, {BackgroundColor3 = FrostyUI.Theme.Accent}, 0.2)
+        end)
+        
+        KeySubmit.MouseButton1Down:Connect(function()
+            Tween(KeySubmit, {BackgroundColor3 = FrostyUI.Theme.Accent:Lerp(Color3.fromRGB(0, 0, 0), 0.2)}, 0.1)
+        end)
+        
+        KeySubmit.MouseButton1Up:Connect(function()
+            Tween(KeySubmit, {BackgroundColor3 = FrostyUI.Theme.Accent}, 0.1)
+            
+            local keyInput = KeyInput.Text
+            local keyValid = false
+            
+            -- Check if key is valid
+            for _, validKey in ipairs(config.Key) do
+                if keyInput == validKey then
+                    keyValid = true
+                    break
+                end
+            end
+            
+            if keyValid then
+                KeyStatus.Text = "Key validated!"
+                KeyStatus.TextColor3 = Color3.fromRGB(75, 255, 75)
+                
+                wait(0.5)
+                Tween(KeyFrame, {Position = UDim2.new(0.5, -150, 0.5, -100), Size = UDim2.new(0, 300, 0, 0)}, 0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+                wait(0.5)
+                KeyFrame:Destroy()
+                
+                config.KeyCallback(true)
+                Window:Initialize()
+            else
+                KeyStatus.Text = "Invalid key!"
+                KeyStatus.TextColor3 = Color3.fromRGB(255, 75, 75)
+                Tween(KeyFrame, {Position = UDim2.new(0.5, -155, 0.5, -100)}, 0.1)
+                wait(0.1)
+                Tween(KeyFrame, {Position = UDim2.new(0.5, -145, 0.5, -100)}, 0.1)
+                wait(0.1)
+                Tween(KeyFrame, {Position = UDim2.new(0.5, -150, 0.5, -100)}, 0.1)
+                
+                config.KeyCallback(false)
+            end
+        end)
+    else
+        Window:Initialize()
+    end
+    
+    function Window:Initialize()
+        if Window.Initialized then return end
+        Window.Initialized = true
+        
+        -- Create main window container
+        local MainFrame = Create("Frame"){
+            Name = "MainFrame",
+            Parent = FrostyContainer,
+            Size = config.Size,
+            Position = config.Position,
+            BackgroundColor3 = FrostyUI.Theme.Primary,
+            ClipsDescendants = true,
+            Active = true,
+            Draggable = true
+        }
+        
+        local MainCorner = Create("UICorner"){
+            Parent = MainFrame,
+            CornerRadius = FrostyUI.Defaults.CornerRadius
+        }
+        
+        local MainStroke = Create("UIStroke"){
+            Parent = MainFrame,
+            Color = FrostyUI.Theme.Accent,
+            Thickness = FrostyUI.Defaults.StrokeThickness
+        }
+        
+        -- Top bar with title
+        local TopBar = Create("Frame"){
+            Name = "TopBar",
+            Parent = MainFrame,
+            Size = UDim2.new(1, 0, 0, 40),
+            BackgroundColor3 = FrostyUI.Theme.Secondary,
+            Position = UDim2.new(0, 0, 0, 0)
+        }
+        
+        local TopBarCorner = Create("UICorner"){
+            Parent = TopBar,
+            CornerRadius = FrostyUI.Defaults.CornerRadius
+        }
+        
+        local TopBarTitle = Create("TextLabel"){
+            Name = "Title",
+            Parent = TopBar,
+            Size = UDim2.new(1, -40, 1, 0),
+            BackgroundTransparency = 1,
+            Text = config.Name,
+            Font = FrostyUI.Font,
+            TextSize = 18,
+            TextColor3 = FrostyUI.Theme.Text,
+            Position = UDim2.new(0, 10, 0, 0),
+            TextXAlignment = Enum.TextXAlignment.Left
+        }
+        
+        -- Close button
+        local CloseButton = Create("ImageButton"){
+            Name = "CloseButton",
+            Parent = TopBar,
+            Size = UDim2.new(0, 24, 0, 24),
+            Position = UDim2.new(1, -32, 0, 8),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://6031094678", -- Close icon
+            ImageColor3 = FrostyUI.Theme.Text
+        }
+        
+        CloseButton.MouseEnter:Connect(function()
+            Tween(CloseButton, {ImageColor3 = Color3.fromRGB(255, 100, 100)}, 0.2)
+        end)
+        
+        CloseButton.MouseLeave:Connect(function()
+            Tween(CloseButton, {ImageColor3 = FrostyUI.Theme.Text}, 0.2)
+        end)
+        
+        CloseButton.MouseButton1Click:Connect(function()
+            Tween(MainFrame, {Size = UDim2.new(0, MainFrame.Size.X.Offset, 0, 0)}, 0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+            wait(0.5)
+            FrostyContainer:Destroy()
+            
+            if BlurEffect then
+                BlurEffect:Destroy()
+            end
+        end)
+        
+        -- Tab container
+        local TabContainer = Create("Frame"){
+            Name = "TabContainer",
+            Parent = MainFrame,
+            Size = UDim2.new(0, 120, 1, -40),
+            Position = UDim2.new(0, 0, 0, 40),
+            BackgroundColor3 = FrostyUI.Theme.Secondary,
+            ZIndex = 2
+        }
+        
+        local TabContainerCorner = Create("UICorner"){
+            Parent = TabContainer,
+            CornerRadius = FrostyUI.Defaults.CornerRadius
+        }
+        
+        local TabListLayout = Create("UIListLayout"){
+            Parent = TabContainer,
+            Padding = UDim.new(0, 5),
+            FillDirection = Enum.FillDirection.Vertical,
+            HorizontalAlignment = Enum.HorizontalAlignment.Center,
+            SortOrder = Enum.SortOrder.LayoutOrder
+        }
+        
+        local TabListPadding = Create("UIPadding"){
+            Parent = TabContainer,
+            PaddingTop = UDim.new(0, 10),
+            PaddingBottom = UDim.new(0, 10)
+        }
+        
+        -- Content container
+        local ContentContainer = Create("Frame"){
+            Name = "ContentContainer",
+            Parent = MainFrame,
+            Size = UDim2.new(1, -130, 1, -50),
+            Position = UDim2.new(0, 125, 0, 45),
+            BackgroundColor3 = FrostyUI.Theme.Primary,
+            BackgroundTransparency = 1,
+            ClipsDescendants = true
+        }
+        
+        -- Window functions
+        function Window:CreateTab(tabConfig)
+            tabConfig = tabConfig or {}
+            tabConfig.Name = tabConfig.Name or "Tab"
+            tabConfig.Icon = tabConfig.Icon or "rbxassetid://6034509993" -- Default icon
+            
+            local Tab = {}
+            Tab.Elements = {}
+            
+            -- Create tab button
+            local TabButton = Create("TextButton"){
+                Name = tabConfig.Name .. "Button",
+                Parent = TabContainer,
+                Size = UDim2.new(1, -20, 0, 30),
+                BackgroundColor3 = FrostyUI.Theme.Primary,
+                Text = "",
+                AutoButtonColor = false,
+                LayoutOrder = #Window.Tabs + 1
+            }
+            
+            local TabButtonCorner = Create("UICorner"){
+                Parent = TabButton,
+                CornerRadius = FrostyUI.Defaults.CornerRadius
+            }
+            
+            local TabButtonIcon = Create("ImageLabel"){
+                Name = "Icon",
+                Parent = TabButton,
+                Size = UDim2.new(0, 20, 0, 20),
+                Position = UDim2.new(0, 5, 0.5, -10),
+                BackgroundTransparency = 1,
+                Image = tabConfig.Icon,
+                ImageColor3 = FrostyUI.Theme.Text
+            }
+            
+            local TabButtonText = Create("TextLabel"){
+                Name = "Text",
+                Parent = TabButton,
+                Size = UDim2.new(1, -30, 1, 0),
+                Position = UDim2.new(0, 30, 0, 0),
+                BackgroundTransparency = 1,
+                Text = tabConfig.Name,
+                Font = FrostyUI.Font,
+                TextSize = 14,
+                TextColor3 = FrostyUI.Theme.Text,
+                TextXAlignment = Enum.TextXAlignment.Left
+            }
+            
+            -- Create tab content
+            local TabContent = Create("ScrollingFrame"){
+                Name = tabConfig.Name .. "Content",
+                Parent = ContentContainer,
+                Size = UDim2.new(1, 0, 1, 0),
+                BackgroundTransparency = 1,
+                ScrollBarThickness = 4,
+                ScrollBarImageColor3 = FrostyUI.Theme.Accent,
+                BottomImage = "rbxassetid://6889812791",
+                MidImage = "rbxassetid://6889812721",
+                TopImage = "rbxassetid://6889812643",
+                VerticalScrollBarPosition = Enum.VerticalScrollBarPosition.Right,
+                Visible = false,
+                CanvasSize = UDim2.new(0, 0, 0, 0)
+            }
+            
+            local ElementLayout = Create("UIListLayout"){
+                Parent = TabContent,
+                Padding = UDim.new(0, 10),
+                FillDirection = Enum.FillDirection.Vertical,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                SortOrder = Enum.SortOrder.LayoutOrder
+            }
+            
+            local ElementPadding = Create("UIPadding"){
+                Parent = TabContent,
+                PaddingTop = UDim.new(0, 10),
+                PaddingBottom = UDim.new(0, 10),
+                PaddingLeft = UDim.new(0, 10),
+                PaddingRight = UDim.new(0, 10)
+            }
+            
+            -- Tab button functionality
+            TabButton.MouseEnter:Connect(function()
+                if TabContent.Visible then return end
+                Tween(TabButton, {BackgroundColor3 = FrostyUI.Theme.Primary:Lerp(FrostyUI.Theme.Accent, 0.3)}, 0.2)
+            end)
+            
+            TabButton.MouseLeave:Connect(function()
+                if TabContent.Visible then return end
+                Tween(TabButton, {BackgroundColor3 = FrostyUI.Theme.Primary}, 0.2)
+            end)
+            
+            TabButton.MouseButton1Click:Connect(function()
+                -- Hide all tab contents
+                for _, otherTab in pairs(Window.Tabs) do
+                    if otherTab.TabContent ~= TabContent then
+                        otherTab.TabContent.Visible = false
+                        Tween(otherTab.TabButton, {BackgroundColor3 = FrostyUI.Theme.Primary}, 0.2)
+                    end
+                end
+                
+                -- Show this tab's content
+                TabContent.Visible = true
+                Tween(TabButton, {BackgroundColor3 = FrostyUI.Theme.Accent}, 0.2)
+            end)
+            
+            -- Auto-select first tab
+            if #Window.Tabs == 0 then
+                TabContent.Visible = true
+                TabButton.BackgroundColor3 = FrostyUI.Theme.Accent
+            end
+            
+            -- Store tab data
+            Tab.TabButton = TabButton
+            Tab.TabContent = TabContent
+            
+            -- Create elements
+            function Tab:CreateSection(sectionConfig)
+                sectionConfig = sectionConfig or {}
+                sectionConfig.Name = sectionConfig.Name or "Section"
+                
+                local Section = {}
+                Window.ElementCount = Window.ElementCount + 1
+                
+                -- Create section frame
+                local SectionFrame = Create("Frame"){
+                    Name = sectionConfig.Name .. "Section",
+                    Parent = TabContent,
+                    Size = UDim2.new(1, 0, 0, 40), -- Will be resized based on content
+                    BackgroundColor3 = FrostyUI.Theme.Secondary,
+                    LayoutOrder = Window.ElementCount
+                }
+                
+                local SectionCorner = Create("UICorner"){
+                    Parent = SectionFrame,
+                    CornerRadius = FrostyUI.Defaults.CornerRadius
+                }
+                
+                local SectionTitle = Create("TextLabel"){
+                    Name = "Title",
+                    Parent = SectionFrame,
+                    Size = UDim2.new(1, -20, 0, 30),
+                    Position = UDim2.new(0, 10, 0, 5),
+                    BackgroundTransparency = 1,
+                    Text = sectionConfig.Name,
+                    Font = FrostyUI.Font,
+                    TextSize = 16,
+                    TextColor3 = FrostyUI.Theme.Text,
+                    TextXAlignment = Enum.TextXAlignment.Left
+                }
+                
+                local SectionContent = Create("Frame"){
+                    Name = "Content",
+                    Parent = SectionFrame,
+                    Size = UDim2.new(1, -20, 1, -40),
+                    Position = UDim2.new(0, 10, 0, 35),
+                    BackgroundTransparency = 1
+                }
+                
+                local SectionLayout = Create("UIListLayout"){
+                    Parent = SectionContent,
+                    Padding = UDim.new(0, 8),
+                    FillDirection = Enum.FillDirection.Vertical,
+                    HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                    SortOrder = Enum.SortOrder.LayoutOrder,
+                    VerticalAlignment = Enum.VerticalAlignment.Top
+                }
+                
+                -- Function to update section and canvas size
+                local function UpdateSectionSize()
+                    local contentSize = SectionLayout.AbsoluteContentSize.Y
+                    SectionFrame.Size = UDim2.new(1, 0, 0, contentSize + 45)
+                    TabContent.CanvasSize = UDim2.new(0, 0, 0, ElementLayout.AbsoluteContentSize.Y + 20)
+                end
+                
+                SectionLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateSectionSize)
+                
+                -- Element creation functions
+                function Section:AddButton(buttonConfig)
+                    buttonConfig = buttonConfig or {}
+                    buttonConfig.Name = buttonConfig.Name or "Button"
+                    buttonConfig.Callback = buttonConfig.Callback or function() end
+                    
+                    local ButtonElement = {}
+                    Window.ElementCount = Window.ElementCount + 1
+                    
+                    local Button = Create("TextButton"){
+                        Name = buttonConfig.Name .. "Button",
+                        Parent = SectionContent,
+                        Size = UDim2.new(1, 0, 0, 30),
+                        BackgroundColor3 = FrostyUI.Theme.Primary,
+                        Text = "",
+                        AutoButtonColor = false,
+                        LayoutOrder = Window.ElementCount
+                    }
+                    
+                    local ButtonCorner = Create("UICorner"){
+                        Parent = Button,
+                        CornerRadius = FrostyUI.Defaults.CornerRadius
+                    }
+                    
+                    local ButtonTitle = Create("TextLabel"){
+                        Name = "Title",
+                        Parent = Button,
+                        Size = UDim2.new(1, -10, 1, 0),
+                        Position = UDim2.new(0, 5, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = buttonConfig.Name,
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        TextXAlignment = Enum.TextXAlignment.Center
+                    }
+                    
+                    Button.MouseEnter:Connect(function()
+                        Tween(Button, {BackgroundColor3 = FrostyUI.Theme.Primary:Lerp(FrostyUI.Theme.Accent, 0.3)}, 0.2)
+                    end)
+                    
+                    Button.MouseLeave:Connect(function()
+                        Tween(Button, {BackgroundColor3 = FrostyUI.Theme.Primary}, 0.2)
+                    end)
+                    
+                    Button.MouseButton1Down:Connect(function()
+                        Tween(Button, {BackgroundColor3 = FrostyUI.Theme.Primary:Lerp(FrostyUI.Theme.Accent, 0.6)}, 0.1)
+                    end)
+                    
+                    Button.MouseButton1Up:Connect(function()
+                        Tween(Button, {BackgroundColor3 = FrostyUI.Theme.Primary:Lerp(FrostyUI.Theme.Accent, 0.3)}, 0.1)
+                        buttonConfig.Callback()
+                    end)
+                    
+                    UpdateSectionSize()
+                    ButtonElement.Instance = Button
+                    return ButtonElement
+                end
+                
+                function Section:AddToggle(toggleConfig)
+                    toggleConfig = toggleConfig or {}
+                    toggleConfig.Name = toggleConfig.Name or "Toggle"
+                    toggleConfig.Default = toggleConfig.Default or false
+                    toggleConfig.Callback = toggleConfig.Callback or function() end
+                    
+                    local ToggleElement = {}
+                    ToggleElement.Value = toggleConfig.Default
+                    Window.ElementCount = Window.ElementCount + 1
+                    
+                    local Toggle = Create("Frame"){
+                        Name = toggleConfig.Name .. "Toggle",
+                        Parent = SectionContent,
+                        Size = UDim2.new(1, 0, 0, 30),
+                        BackgroundTransparency = 1,
+                        LayoutOrder = Window.ElementCount
+                    }
+                    
+                    local ToggleTitle = Create("TextLabel"){
+                        Name = "Title",
+                        Parent = Toggle,
+                        Size = UDim2.new(1, -60, 1, 0),
+                        Position = UDim2.new(0, 5, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = toggleConfig.Name,
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        TextXAlignment = Enum.TextXAlignment.Left
+                    }
+                    
+                    local ToggleButton = Create("Frame"){
+                        Name = "ToggleButton",
+                        Parent = Toggle,
+                        Size = UDim2.new(0, 40, 0, 20),
+                        Position = UDim2.new(1, -45, 0.5, -10),
+                        BackgroundColor3 = toggleConfig.Default and FrostyUI.Theme.Accent or FrostyUI.Theme.LightContrast
+                    }
+                    
+                    local ToggleButtonCorner = Create("UICorner"){
+                        Parent = ToggleButton,
+                        CornerRadius = UDim.new(1, 0)
+                    }
+                    
+                    local ToggleIndicator = Create("Frame"){
+                        Name = "Indicator",
+                        Parent = ToggleButton,
+                        Size = UDim2.new(0, 16, 0, 16),
+                        Position = toggleConfig.Default and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8),
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+                    }
+                    
+                    local ToggleIndicatorCorner = Create("UICorner"){
+                        Parent = ToggleIndicator,
+                        CornerRadius = UDim.new(1, 0)
+                    }
+                    
+                    -- Toggle functionality
+                    local function SetToggle(value)
+                        ToggleElement.Value = value
+                        toggleConfig.Callback(value)
+                        
+                        Tween(ToggleButton, {BackgroundColor3 = value and FrostyUI.Theme.Accent or FrostyUI.Theme.LightContrast}, FrostyUI.Defaults.Duration)
+                        Tween(ToggleIndicator, {Position = value and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)}, FrostyUI.Defaults.Duration)
+                    end
+                    
+                    ToggleButton.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            SetToggle(not ToggleElement.Value)
+                        end
+                    end)
+                    
+                    function ToggleElement:Set(value)
+                        SetToggle(value)
+                    end
+                    
+                    UpdateSectionSize()
+                    ToggleElement.Instance = Toggle
+                    return ToggleElement
+                end
+                
+                function Section:AddSlider(sliderConfig)
+                    sliderConfig = sliderConfig or {}
+                    sliderConfig.Name = sliderConfig.Name or "Slider"
+                    sliderConfig.Min = sliderConfig.Min or 0
+                    sliderConfig.Max = sliderConfig.Max or 100
+                    sliderConfig.Default = sliderConfig.Default or sliderConfig.Min
+                    sliderConfig.Increment = sliderConfig.Increment or 1
+                    sliderConfig.Callback = sliderConfig.Callback or function() end
+                    
+                    local SliderElement = {}
+                    SliderElement.Value = sliderConfig.Default
+                    Window.ElementCount = Window.ElementCount + 1
+                    
+                    local Slider = Create("Frame"){
+                        Name = sliderConfig.Name .. "Slider",
+                        Parent = SectionContent,
+                        Size = UDim2.new(1, 0, 0, 50),
+                        BackgroundTransparency = 1,
+                        LayoutOrder = Window.ElementCount
+                    }
+                    
+                    local SliderTitle = Create("TextLabel"){
+                        Name = "Title",
+                        Parent = Slider,
+                        Size = UDim2.new(1, 0, 0, 20),
+                        Position = UDim2.new(0, 5, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = sliderConfig.Name,
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        TextXAlignment = Enum.TextXAlignment.Left
+                    }
+                    
+                    local SliderValue = Create("TextLabel"){
+                        Name = "Value",
+                        Parent = Slider,
+                        Size = UDim2.new(0, 40, 0, 20),
+                        Position = UDim2.new(1, -45, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = tostring(sliderConfig.Default),
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        TextXAlignment = Enum.TextXAlignment.Right
+                    }
+                    
+                    local SliderBackground = Create("Frame"){
+                        Name = "Background",
+                        Parent = Slider,
+                        Size = UDim2.new(1, 0, 0, 10),
+                        Position = UDim2.new(0, 0, 0, 25),
+                        BackgroundColor3 = FrostyUI.Theme.LightContrast
+                    }
+                    
+                    local SliderBackCorner = Create("UICorner"){
+                        Parent = SliderBackground,
+                        CornerRadius = UDim.new(1, 0)
+                    }
+                    
+                    local SliderFill = Create("Frame"){
+                        Name = "Fill",
+                        Parent = SliderBackground,
+                        Size = UDim2.new(0, 0, 1, 0),
+                        BackgroundColor3 = FrostyUI.Theme.Accent
+                    }
+                    
+                    local SliderFillCorner = Create("UICorner"){
+                        Parent = SliderFill,
+                        CornerRadius = UDim.new(1, 0)
+                    }
+                    
+                    local SliderDragger = Create("TextButton"){
+                        Name = "Dragger",
+                        Parent = SliderFill,
+                        Size = UDim2.new(0, 16, 0, 16),
+                        Position = UDim2.new(1, -8, 0.5, -8),
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                        Text = "",
+                        ZIndex = 3
+                    }
+                    
+                    local SliderDraggerCorner = Create("UICorner"){
+                        Parent = SliderDragger,
+                        CornerRadius = UDim.new(1, 0)
+                    }
+                    
+                    -- Functions for slider
+                    local function SetSlider(value)
+                        value = math.clamp(value, sliderConfig.Min, sliderConfig.Max)
+                        value = Round(value, sliderConfig.Increment)
+                        SliderElement.Value = value
+                        
+                        local percent = (value - sliderConfig.Min) / (sliderConfig.Max - sliderConfig.Min)
+                        SliderValue.Text = tostring(value)
+                        SliderFill.Size = UDim2.new(percent, 0, 1, 0)
+                        sliderConfig.Callback(value)
+                    end
+                    
+                    local function UpdateSlider(input)
+                        local sizeX = math.clamp((input.Position.X - SliderBackground.AbsolutePosition.X) / SliderBackground.AbsoluteSize.X, 0, 1)
+                        local value = sliderConfig.Min + ((sliderConfig.Max - sliderConfig.Min) * sizeX)
+                        value = Round(value / sliderConfig.Increment) * sliderConfig.Increment
+                        SetSlider(value)
+                    end
+                    
+                    -- Set default value
+                    SetSlider(sliderConfig.Default)
+                    
+                    -- Dragging functionality
+                    local dragging = false
+                    
+                    SliderDragger.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            dragging = true
+                        end
+                    end)
+                    
+                    SliderDragger.InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            dragging = false
+                        end
+                    end)
+                    
+                    SliderBackground.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            dragging = true
+                            UpdateSlider(input)
+                        end
+                    end)
+                    
+                    SliderBackground.InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            dragging = false
+                        end
+                    end)
+                    
+                    UserInputService.InputChanged:Connect(function(input)
+                        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                            UpdateSlider(input)
+                        end
+                    end)
+                    
+                    -- Set value method
+                    function SliderElement:Set(value)
+                        SetSlider(value)
+                    end
+                    
+                    UpdateSectionSize()
+                    SliderElement.Instance = Slider
+                    return SliderElement
+                end
+                
+                function Section:AddDropdown(dropdownConfig)
+                    dropdownConfig = dropdownConfig or {}
+                    dropdownConfig.Name = dropdownConfig.Name or "Dropdown"
+                    dropdownConfig.Options = dropdownConfig.Options or {}
+                    dropdownConfig.Default = dropdownConfig.Default or nil
+                    dropdownConfig.Callback = dropdownConfig.Callback or function() end
+                    
+                    local DropdownElement = {}
+                    DropdownElement.Value = dropdownConfig.Default
+                    Window.ElementCount = Window.ElementCount + 1
+                    
+                    local Dropdown = Create("Frame"){
+                        Name = dropdownConfig.Name .. "Dropdown",
+                        Parent = SectionContent,
+                        Size = UDim2.new(1, 0, 0, 40),
+                        BackgroundTransparency = 1,
+                        LayoutOrder = Window.ElementCount,
+                        ClipsDescendants = true
+                    }
+                    
+                    local DropdownTitle = Create("TextLabel"){
+                        Name = "Title",
+                        Parent = Dropdown,
+                        Size = UDim2.new(1, 0, 0, 20),
+                        Position = UDim2.new(0, 5, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = dropdownConfig.Name,
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        TextXAlignment = Enum.TextXAlignment.Left
+                    }
+                    
+                    local DropdownButton = Create("TextButton"){
+                        Name = "Button",
+                        Parent = Dropdown,
+                        Size = UDim2.new(1, 0, 0, 30),
+                        Position = UDim2.new(0, 0, 0, 20),
+                        BackgroundColor3 = FrostyUI.Theme.Primary,
+                        Text = "",
+                        AutoButtonColor = false
+                    }
+                    
+                    local DropdownButtonCorner = Create("UICorner"){
+                        Parent = DropdownButton,
+                        CornerRadius = FrostyUI.Defaults.CornerRadius
+                    }
+                    
+                    local DropdownSelected = Create("TextLabel"){
+                        Name = "SelectedOption",
+                        Parent = DropdownButton,
+                        Size = UDim2.new(1, -30, 1, 0),
+                        Position = UDim2.new(0, 10, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = dropdownConfig.Default or "Select...",
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        TextXAlignment = Enum.TextXAlignment.Left
+                    }
+                    
+                    local DropdownIcon = Create("ImageLabel"){
+                        Name = "Icon",
+                        Parent = DropdownButton,
+                        Size = UDim2.new(0, 20, 0, 20),
+                        Position = UDim2.new(1, -25, 0.5, -10),
+                        BackgroundTransparency = 1,
+                        Image = "rbxassetid://6031091004", -- Dropdown arrow
+                        ImageColor3 = FrostyUI.Theme.Text,
+                        Rotation = 0
+                    }
+                    
+                    local DropdownContent = Create("Frame"){
+                        Name = "Content",
+                        Parent = Dropdown,
+                        Size = UDim2.new(1, 0, 0, 0),
+                        Position = UDim2.new(0, 0, 0, 50),
+                        BackgroundColor3 = FrostyUI.Theme.Secondary,
+                        BorderSizePixel = 0
+                    }
+                    
+                    local DropdownContentLayout = Create("UIListLayout"){
+                        Parent = DropdownContent,
+                        Padding = UDim.new(0, 2),
+                        FillDirection = Enum.FillDirection.Vertical,
+                        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                        SortOrder = Enum.SortOrder.LayoutOrder,
+                        VerticalAlignment = Enum.VerticalAlignment.Top
+                    }
+                    
+                    local DropdownContentPadding = Create("UIPadding"){
+                        Parent = DropdownContent,
+                        PaddingTop = UDim.new(0, 2),
+                        PaddingBottom = UDim.new(0, 2),
+                        PaddingLeft = UDim.new(0, 2),
+                        PaddingRight = UDim.new(0, 2)
+                    }
+                    
+                    local opened = false
+                    
+                    -- Create options
+                    for i, option in pairs(dropdownConfig.Options) do
+                        local OptionButton = Create("TextButton"){
+                            Name = "Option_" .. option,
+                            Parent = DropdownContent,
+                            Size = UDim2.new(1, -4, 0, 28),
+                            BackgroundColor3 = FrostyUI.Theme.Primary,
+                            Text = "",
+                            AutoButtonColor = false,
+                            LayoutOrder = i
+                        }
+                        
+                        local OptionButtonCorner = Create("UICorner"){
+                            Parent = OptionButton,
+                            CornerRadius = FrostyUI.Defaults.CornerRadius
+                        }
+                        
+                        local OptionText = Create("TextLabel"){
+                            Name = "Text",
+                            Parent = OptionButton,
+                            Size = UDim2.new(1, -10, 1, 0),
+                            Position = UDim2.new(0, 5, 0, 0),
+                            BackgroundTransparency = 1,
+                            Text = option,
+                            Font = FrostyUI.Font,
+                            TextSize = 14,
+                            TextColor3 = FrostyUI.Theme.Text,
+                            TextXAlignment = Enum.TextXAlignment.Left
+                        }
+                        
+                        OptionButton.MouseEnter:Connect(function()
+                            Tween(OptionButton, {BackgroundColor3 = FrostyUI.Theme.Primary:Lerp(FrostyUI.Theme.Accent, 0.3)}, 0.2)
+                        end)
+                        
+                        OptionButton.MouseLeave:Connect(function()
+                            Tween(OptionButton, {BackgroundColor3 = FrostyUI.Theme.Primary}, 0.2)
+                        end)
+                        
+                        OptionButton.MouseButton1Click:Connect(function()
+                            DropdownSelected.Text = option
+                            DropdownElement.Value = option
+                            dropdownConfig.Callback(option)
+                            
+                            -- Close dropdown
+                            opened = false
+                            Tween(DropdownIcon, {Rotation = 0}, FrostyUI.Defaults.Duration)
+                            Tween(DropdownContent, {Size = UDim2.new(1, 0, 0, 0)}, FrostyUI.Defaults.Duration)
+                            Tween(Dropdown, {Size = UDim2.new(1, 0, 0, 50)}, FrostyUI.Defaults.Duration)
+                            UpdateSectionSize()
+                        end)
+                    end
+                    
+                    -- Toggle dropdown
+                    DropdownButton.MouseButton1Click:Connect(function()
+                        opened = not opened
+                        
+                        if opened then
+                            local contentSize = DropdownContentLayout.AbsoluteContentSize.Y + 4
+                            Tween(DropdownIcon, {Rotation = 180}, FrostyUI.Defaults.Duration)
+                            Tween(DropdownContent, {Size = UDim2.new(1, 0, 0, contentSize)}, FrostyUI.Defaults.Duration)
+                            Tween(Dropdown, {Size = UDim2.new(1, 0, 0, 50 + contentSize)}, FrostyUI.Defaults.Duration)
+                        else
+                            Tween(DropdownIcon, {Rotation = 0}, FrostyUI.Defaults.Duration)
+                            Tween(DropdownContent, {Size = UDim2.new(1, 0, 0, 0)}, FrostyUI.Defaults.Duration)
+                            Tween(Dropdown, {Size = UDim2.new(1, 0, 0, 50)}, FrostyUI.Defaults.Duration)
+                        end
+                        
+                        UpdateSectionSize()
+                    end)
+                    
+                    DropdownButton.MouseEnter:Connect(function()
+                        Tween(DropdownButton, {BackgroundColor3 = FrostyUI.Theme.Primary:Lerp(FrostyUI.Theme.Accent, 0.3)}, 0.2)
+                    end)
+                    
+                    DropdownButton.MouseLeave:Connect(function()
+                        Tween(DropdownButton, {BackgroundColor3 = FrostyUI.Theme.Primary}, 0.2)
+                    end)
+                    
+                    -- Set value method
+                    function DropdownElement:Set(value)
+                        if table.find(dropdownConfig.Options, value) then
+                            DropdownSelected.Text = value
+                            DropdownElement.Value = value
+                            dropdownConfig.Callback(value)
+                        end
+                    end
+                    
+                    UpdateSectionSize()
+                    DropdownElement.Instance = Dropdown
+                    return DropdownElement
+                end
+                
+                function Section:AddTextbox(textboxConfig)
+                    textboxConfig = textboxConfig or {}
+                    textboxConfig.Name = textboxConfig.Name or "Textbox"
+                    textboxConfig.Default = textboxConfig.Default or ""
+                    textboxConfig.PlaceholderText = textboxConfig.PlaceholderText or "Enter text..."
+                    textboxConfig.ClearOnFocus = textboxConfig.ClearOnFocus ~= nil and textboxConfig.ClearOnFocus or true
+                    textboxConfig.Callback = textboxConfig.Callback or function() end
+                    
+                    local TextboxElement = {}
+                    TextboxElement.Value = textboxConfig.Default
+                    Window.ElementCount = Window.ElementCount + 1
+                    
+                    local Textbox = Create("Frame"){
+                        Name = textboxConfig.Name .. "Textbox",
+                        Parent = SectionContent,
+                        Size = UDim2.new(1, 0, 0, 50),
+                        BackgroundTransparency = 1,
+                        LayoutOrder = Window.ElementCount
+                    }
+                    
+                    local TextboxTitle = Create("TextLabel"){
+                        Name = "Title",
+                        Parent = Textbox,
+                        Size = UDim2.new(1, 0, 0, 20),
+                        Position = UDim2.new(0, 5, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = textboxConfig.Name,
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        TextXAlignment = Enum.TextXAlignment.Left
+                    }
+                    
+                    local TextboxField = Create("TextBox"){
+                        Name = "TextboxField",
+                        Parent = Textbox,
+                        Size = UDim2.new(1, 0, 0, 30),
+                        Position = UDim2.new(0, 0, 0, 20),
+                        BackgroundColor3 = FrostyUI.Theme.Primary,
+                        Text = textboxConfig.Default,
+                        PlaceholderText = textboxConfig.PlaceholderText,
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        PlaceholderColor3 = FrostyUI.Theme.Disabled,
+                        ClearTextOnFocus = textboxConfig.ClearOnFocus,
+                        ClipsDescendants = true
+                    }
+                    
+                    local TextboxFieldCorner = Create("UICorner"){
+                        Parent = TextboxField,
+                        CornerRadius = FrostyUI.Defaults.CornerRadius
+                    }
+                    
+                    local TextboxFieldPadding = Create("UIPadding"){
+                        Parent = TextboxField,
+                        PaddingLeft = UDim.new(0, 8),
+                        PaddingRight = UDim.new(0, 8)
+                    }
+                    
+                    TextboxField.FocusLost:Connect(function(enterPressed)
+                        TextboxElement.Value = TextboxField.Text
+                        textboxConfig.Callback(TextboxField.Text, enterPressed)
+                    end)
+                    
+                    TextboxField.Focused:Connect(function()
+                        Tween(TextboxField, {BackgroundColor3 = FrostyUI.Theme.Primary:Lerp(FrostyUI.Theme.Accent, 0.2)}, 0.2)
+                    end)
+                    
+                    TextboxField.FocusLost:Connect(function()
+                        Tween(TextboxField, {BackgroundColor3 = FrostyUI.Theme.Primary}, 0.2)
+                    end)
+                    
+                    -- Set value method
+                    function TextboxElement:Set(value)
+                        TextboxField.Text = value
+                        TextboxElement.Value = value
+                        textboxConfig.Callback(value, false)
+                    end
+                    
+                    UpdateSectionSize()
+                    TextboxElement.Instance = Textbox
+                    return TextboxElement
+                end
+                
+                function Section:AddColorPicker(colorConfig)
+                    colorConfig = colorConfig or {}
+                    colorConfig.Name = colorConfig.Name or "Color Picker"
+                    colorConfig.Default = colorConfig.Default or Color3.fromRGB(255, 255, 255)
+                    colorConfig.Callback = colorConfig.Callback or function() end
+                    
+                    local ColorElement = {}
+                    ColorElement.Value = colorConfig.Default
+                    Window.ElementCount = Window.ElementCount + 1
+                    
+                    local ColorPicker = Create("Frame"){
+                        Name = colorConfig.Name .. "ColorPicker",
+                        Parent = SectionContent,
+                        Size = UDim2.new(1, 0, 0, 40),
+                        BackgroundTransparency = 1,
+                        LayoutOrder = Window.ElementCount,
+                        ClipsDescendants = true
+                    }
+                    
+                    local ColorTitle = Create("TextLabel"){
+                        Name = "Title",
+                        Parent = ColorPicker,
+                        Size = UDim2.new(1, -60, 1, 0),
+                        Position = UDim2.new(0, 5, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = colorConfig.Name,
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        TextXAlignment = Enum.TextXAlignment.Left
+                    }
+                    
+                    local ColorButton = Create("TextButton"){
+                        Name = "ColorButton",
+                        Parent = ColorPicker,
+                        Size = UDim2.new(0, 30, 0, 30),
+                        Position = UDim2.new(1, -40, 0.5, -15),
+                        BackgroundColor3 = colorConfig.Default,
+                        Text = "",
+                        AutoButtonColor = false
+                    }
+                    
+                    local ColorButtonCorner = Create("UICorner"){
+                        Parent = ColorButton,
+                        CornerRadius = UDim.new(0, 6)
+                    }
+                    
+                    local ColorPickerFrame = Create("Frame"){
+                        Name = "ColorPickerFrame",
+                        Parent = ColorPicker,
+                        Size = UDim2.new(1, 0, 0, 0),
+                        Position = UDim2.new(0, 0, 0, 40),
+                        BackgroundColor3 = FrostyUI.Theme.Secondary,
+                        Visible = false
+                    }
+                    
+                    local ColorPickerFrameCorner = Create("UICorner"){
+                        Parent = ColorPickerFrame,
+                        CornerRadius = FrostyUI.Defaults.CornerRadius
+                    }
+                    
+                    -- Create HSV color slider
+                    local HueFrame = Create("Frame"){
+                        Name = "HueFrame",
+                        Parent = ColorPickerFrame,
+                        Size = UDim2.new(1, -20, 0, 20),
+                        Position = UDim2.new(0, 10, 0, 10),
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                        BorderSizePixel = 0
+                    }
+                    
+                    local HueFrameCorner = Create("UICorner"){
+                        Parent = HueFrame,
+                        CornerRadius = UDim.new(0, 4)
+                    }
+                    
+                    local HueGradient = Create("UIGradient"){
+                        Parent = HueFrame,
+                        Color = ColorSequence.new({
+                            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+                            ColorSequenceKeypoint.new(0.167, Color3.fromRGB(255, 255, 0)),
+                            ColorSequenceKeypoint.new(0.333, Color3.fromRGB(0, 255, 0)),
+                            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+                            ColorSequenceKeypoint.new(0.667, Color3.fromRGB(0, 0, 255)),
+                            ColorSequenceKeypoint.new(0.833, Color3.fromRGB(255, 0, 255)),
+                            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+                        })
+                    }
+                    
+                    local HueSelector = Create("Frame"){
+                        Name = "HueSelector",
+                        Parent = HueFrame,
+                        Size = UDim2.new(0, 4, 1, 0),
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                        BorderSizePixel = 0
+                    }
+                    
+                    local SatValFrame = Create("Frame"){
+                        Name = "SatValFrame",
+                        Parent = ColorPickerFrame,
+                        Size = UDim2.new(1, -20, 0, 100),
+                        Position = UDim2.new(0, 10, 0, 40),
+                        BackgroundColor3 = Color3.fromHSV(1, 1, 1),
+                        BorderSizePixel = 0
+                    }
+                    
+                    local SatValFrameCorner = Create("UICorner"){
+                        Parent = SatValFrame,
+                        CornerRadius = UDim.new(0, 4)
+                    }
+                    
+                    local SaturationGradient = Create("UIGradient"){
+                        Parent = SatValFrame,
+                        Color = ColorSequence.new({
+                            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+                            ColorSequenceKeypoint.new(1, Color3.fromHSV(1, 1, 1))
+                        }),
+                        Transparency = NumberSequence.new({
+                            NumberSequenceKeypoint.new(0, 0),
+                            NumberSequenceKeypoint.new(1, 0)
+                        })
+                    }
+                    
+                    local ValueGradient = Create("Frame"){
+                        Name = "ValueGradient",
+                        Parent = SatValFrame,
+                        Size = UDim2.new(1, 0, 1, 0),
+                        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+                        BorderSizePixel = 0,
+                        BackgroundTransparency = 0
+                    }
+                    
+                    local ValueGradientCorner = Create("UICorner"){
+                        Parent = ValueGradient,
+                        CornerRadius = UDim.new(0, 4)
+                    }
+                    
+                    local ValueGradientGradient = Create("UIGradient"){
+                        Parent = ValueGradient,
+                        Color = ColorSequence.new({
+                            ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+                            ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+                        }),
+                        Transparency = NumberSequence.new({
+                            NumberSequenceKeypoint.new(0, 1),
+                            NumberSequenceKeypoint.new(1, 0)
+                        })
+                    }
+                    
+                    local SatValSelector = Create("Frame"){
+                        Name = "SatValSelector",
+                        Parent = SatValFrame,
+                        Size = UDim2.new(0, 10, 0, 10),
+                        BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                        BorderSizePixel = 0,
+                        AnchorPoint = Vector2.new(0.5, 0.5)
+                    }
+                    
+                    local SatValSelectorCorner = Create("UICorner"){
+                        Parent = SatValSelector,
+                        CornerRadius = UDim.new(1, 0)
+                    }
+                    
+                    -- Add RGB inputs
+                    local RGBFrame = Create("Frame"){
+                        Name = "RGBFrame",
+                        Parent = ColorPickerFrame,
+                        Size = UDim2.new(1, -20, 0, 25),
+                        Position = UDim2.new(0, 10, 0, 150),
+                        BackgroundTransparency = 1
+                    }
+                    
+                    local RLabel = Create("TextLabel"){
+                        Name = "RLabel",
+                        Parent = RGBFrame,
+                        Size = UDim2.new(0, 15, 1, 0),
+                        BackgroundTransparency = 1,
+                        Text = "R:",
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text
+                    }
+                    
+                    local RInput = Create("TextBox"){
+                        Name = "RInput",
+                        Parent = RGBFrame,
+                        Size = UDim2.new(0, 40, 1, 0),
+                        Position = UDim2.new(0, 20, 0, 0),
+                        BackgroundColor3 = FrostyUI.Theme.Primary,
+                        Text = tostring(math.floor(colorConfig.Default.R * 255)),
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        ClipsDescendants = true
+                    }
+                    
+                    local RInputCorner = Create("UICorner"){
+                        Parent = RInput,
+                        CornerRadius = UDim.new(0, 4)
+                    }
+                    
+                    local GLabel = Create("TextLabel"){
+                        Name = "GLabel",
+                        Parent = RGBFrame,
+                        Size = UDim2.new(0, 15, 1, 0),
+                        Position = UDim2.new(0, 70, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = "G:",
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text
+                    }
+                    
+                    local GInput = Create("TextBox"){
+                        Name = "GInput",
+                        Parent = RGBFrame,
+                        Size = UDim2.new(0, 40, 1, 0),
+                        Position = UDim2.new(0, 90, 0, 0),
+                        BackgroundColor3 = FrostyUI.Theme.Primary,
+                        Text = tostring(math.floor(colorConfig.Default.G * 255)),
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        ClipsDescendants = true
+                    }
+                    
+                    local GInputCorner = Create("UICorner"){
+                        Parent = GInput,
+                        CornerRadius = UDim.new(0, 4)
+                    }
+                    
+                    local BLabel = Create("TextLabel"){
+                        Name = "BLabel",
+                        Parent = RGBFrame,
+                        Size = UDim2.new(0, 15, 1, 0),
+                        Position = UDim2.new(0, 140, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = "B:",
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text
+                    }
+                    
+                    local BInput = Create("TextBox"){
+                        Name = "BInput",
+                        Parent = RGBFrame,
+                        Size = UDim2.new(0, 40, 1, 0),
+                        Position = UDim2.new(0, 160, 0, 0),
+                        BackgroundColor3 = FrostyUI.Theme.Primary,
+                        Text = tostring(math.floor(colorConfig.Default.B * 255)),
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        ClipsDescendants = true
+                    }
+                    
+                    local BInputCorner = Create("UICorner"){
+                        Parent = BInput,
+                        CornerRadius = UDim.new(0, 4)
+                    }
+                    
+                    -- Add confirm button
+                    local ConfirmButton = Create("TextButton"){
+                        Name = "ConfirmButton",
+                        Parent = ColorPickerFrame,
+                        Size = UDim2.new(0, 80, 0, 25),
+                        Position = UDim2.new(0.5, -40, 0, 185),
+                        BackgroundColor3 = FrostyUI.Theme.Accent,
+                        Text = "Confirm",
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        AutoButtonColor = false
+                    }
+                    
+                    local ConfirmButtonCorner = Create("UICorner"){
+                        Parent = ConfirmButton,
+                        CornerRadius = UDim.new(0, 4)
+                    }
+                    
+                    -- Variables for color picking
+                    local h, s, v = Color3.toHSV(colorConfig.Default)
+                    
+                    -- Update functions
+                    local function UpdateColor()
+                        local color = Color3.fromHSV(h, s, v)
+                        
+                        -- Update the satval frame background
+                        SatValFrame.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+                        
+                        -- Update the color button
+                        ColorButton.BackgroundColor3 = color
+                        
+                        -- Update RGB inputs
+                        RInput.Text = tostring(math.floor(color.R * 255))
+                        GInput.Text = tostring(math.floor(color.G * 255))
+                        BInput.Text = tostring(math.floor(color.B * 255))
+                        
+                        -- Update the hue selector position
+                        HueSelector.Position = UDim2.new(h, 0, 0, 0)
+                        
+                        -- Update the satval selector position
+                        SatValSelector.Position = UDim2.new(s, 0, 1 - v, 0)
+                    end
+                    
+                    -- Set from RGB inputs
+                    local function UpdateFromRGB()
+                        local r = tonumber(RInput.Text) or 0
+                        local g = tonumber(GInput.Text) or 0
+                        local b = tonumber(BInput.Text) or 0
+                        
+                        r = math.clamp(r, 0, 255) / 255
+                        g = math.clamp(g, 0, 255) / 255
+                        b = math.clamp(b, 0, 255) / 255
+                        
+                        local color = Color3.new(r, g, b)
+                        h, s, v = Color3.toHSV(color)
+                        
+                        UpdateColor()
+                    end
+                    
+                    RInput.FocusLost:Connect(UpdateFromRGB)
+                    GInput.FocusLost:Connect(UpdateFromRGB)
+                    BInput.FocusLost:Connect(UpdateFromRGB)
+                    
+                    -- Initialize
+                    UpdateColor()
+                    
+                    -- Open/close picker
+                    local pickerOpen = false
+                    ColorButton.MouseButton1Click:Connect(function()
+                        pickerOpen = not pickerOpen
+                        
+                        if pickerOpen then
+                            ColorPickerFrame.Visible = true
+                            Tween(ColorPickerFrame, {Size = UDim2.new(1, 0, 0, 220)}, FrostyUI.Defaults.Duration)
+                            Tween(ColorPicker, {Size = UDim2.new(1, 0, 0, 270)}, FrostyUI.Defaults.Duration)
+                        else
+                            Tween(ColorPickerFrame, {Size = UDim2.new(1, 0, 0, 0)}, FrostyUI.Defaults.Duration)
+                            Tween(ColorPicker, {Size = UDim2.new(1, 0, 0, 40)}, FrostyUI.Defaults.Duration)
+                            wait(FrostyUI.Defaults.Duration)
+                            ColorPickerFrame.Visible = false
+                        end
+                        
+                        UpdateSectionSize()
+                    end)
+                    
+                    -- Color picking logic
+                    local hueDragging, satvalDragging = false, false
+                    
+                    HueFrame.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            hueDragging = true
+                            local relativePos = (input.Position.X - HueFrame.AbsolutePosition.X) / HueFrame.AbsoluteSize.X
+                            h = math.clamp(relativePos, 0, 1)
+                            UpdateColor()
+                        end
+                    end)
+                    
+                    HueFrame.InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            hueDragging = false
+                        end
+                    end)
+                    
+                    SatValFrame.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            satvalDragging = true
+                            local relativeX = (input.Position.X - SatValFrame.AbsolutePosition.X) / SatValFrame.AbsoluteSize.X
+                            local relativeY = (input.Position.Y - SatValFrame.AbsolutePosition.Y) / SatValFrame.AbsoluteSize.Y
+                            s = math.clamp(relativeX, 0, 1)
+                            v = 1 - math.clamp(relativeY, 0, 1)
+                            UpdateColor()
+                        end
+                    end)
+                    
+                    SatValFrame.InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            satvalDragging = false
+                        end
+                    end)
+                    
+                    UserInputService.InputChanged:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.MouseMovement then
+                            if hueDragging then
+                                local relativePos = (input.Position.X - HueFrame.AbsolutePosition.X) / HueFrame.AbsoluteSize.X
+                                h = math.clamp(relativePos, 0, 1)
+                                UpdateColor()
+                            elseif satvalDragging then
+                                local relativeX = (input.Position.X - SatValFrame.AbsolutePosition.X) / SatValFrame.AbsoluteSize.X
+                                local relativeY = (input.Position.Y - SatValFrame.AbsolutePosition.Y) / SatValFrame.AbsoluteSize.Y
+                                s = math.clamp(relativeX, 0, 1)
+                                v = 1 - math.clamp(relativeY, 0, 1)
+                                UpdateColor()
+                            end
+                        end
+                    end)
+                    
+                    -- Confirm button
+                    ConfirmButton.MouseEnter:Connect(function()
+                        Tween(ConfirmButton, {BackgroundColor3 = FrostyUI.Theme.Accent:Lerp(Color3.fromRGB(255, 255, 255), 0.2)}, 0.2)
+                    end)
+                    
+                    ConfirmButton.MouseLeave:Connect(function()
+                        Tween(ConfirmButton, {BackgroundColor3 = FrostyUI.Theme.Accent}, 0.2)
+                    end)
+                    
+                    ConfirmButton.MouseButton1Click:Connect(function()
+                        local color = Color3.fromHSV(h, s, v)
+                        ColorElement.Value = color
+                        colorConfig.Callback(color)
+                        
+                        -- Close picker
+                        pickerOpen = false
+                        Tween(ColorPickerFrame, {Size = UDim2.new(1, 0, 0, 0)}, FrostyUI.Defaults.Duration)
+                        Tween(ColorPicker, {Size = UDim2.new(1, 0, 0, 40)}, FrostyUI.Defaults.Duration)
+                        wait(FrostyUI.Defaults.Duration)
+                        ColorPickerFrame.Visible = false
+                        
+                        UpdateSectionSize()
+                    end)
+                    
+                    UpdateSectionSize()
+                    
+                    -- Set value method
+                    function ColorElement:Set(color)
+                        h, s, v = Color3.toHSV(color)
+                        UpdateColor()
+                        ColorElement.Value = color
+                        colorConfig.Callback(color)
+                    end
+                    
+                    ColorElement.Instance = ColorPicker
+                    return ColorElement
+                end
+                
+                function Section:AddKeybind(keybindConfig)
+                    keybindConfig = keybindConfig or {}
+                    keybindConfig.Name = keybindConfig.Name or "Keybind"
+                    keybindConfig.Default = keybindConfig.Default or Enum.KeyCode.Unknown
+                    keybindConfig.Callback = keybindConfig.Callback or function() end
+                    keybindConfig.ChangedCallback = keybindConfig.ChangedCallback or function() end
+                    
+                    local KeybindElement = {}
+                    KeybindElement.Value = keybindConfig.Default
+                    Window.ElementCount = Window.ElementCount + 1
+                    
+                    local Keybind = Create("Frame"){
+                        Name = keybindConfig.Name .. "Keybind",
+                        Parent = SectionContent,
+                        Size = UDim2.new(1, 0, 0, 30),
+                        BackgroundTransparency = 1,
+                        LayoutOrder = Window.ElementCount
+                    }
+                    
+                    local KeybindTitle = Create("TextLabel"){
+                        Name = "Title",
+                        Parent = Keybind,
+                        Size = UDim2.new(1, -100, 1, 0),
+                        Position = UDim2.new(0, 5, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = keybindConfig.Name,
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        TextXAlignment = Enum.TextXAlignment.Left
+                    }
+                    
+                    local KeybindButton = Create("TextButton"){
+                        Name = "KeybindButton",
+                        Parent = Keybind,
+                        Size = UDim2.new(0, 90, 0, 25),
+                        Position = UDim2.new(1, -95, 0.5, -12.5),
+                        BackgroundColor3 = FrostyUI.Theme.Primary,
+                        Text = keybindConfig.Default ~= Enum.KeyCode.Unknown and keybindConfig.Default.Name or "None",
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = FrostyUI.Theme.Text,
+                        AutoButtonColor = false
+                    }
+                    
+                    local KeybindButtonCorner = Create("UICorner"){
+                        Parent = KeybindButton,
+                        CornerRadius = FrostyUI.Defaults.CornerRadius
+                    }
+                    
+                    local listening = false
+                    
+                    -- Button functionality
+                    KeybindButton.MouseButton1Click:Connect(function()
+                        listening = true
+                        KeybindButton.Text = "..."
+                        Tween(KeybindButton, {BackgroundColor3 = FrostyUI.Theme.Accent}, 0.2)
+                    end)
+                    
+                    KeybindButton.MouseEnter:Connect(function()
+                        if not listening then
+                            Tween(KeybindButton, {BackgroundColor3 = FrostyUI.Theme.Primary:Lerp(FrostyUI.Theme.Accent, 0.3)}, 0.2)
+                        end
+                    end)
+                    
+                    KeybindButton.MouseLeave:Connect(function()
+                        if not listening then
+                            Tween(KeybindButton, {BackgroundColor3 = FrostyUI.Theme.Primary}, 0.2)
+                        end
+                    end)
+                    
+                    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+                        if listening and input.UserInputType == Enum.UserInputType.Keyboard then
+                            listening = false
+                            KeybindElement.Value = input.KeyCode
+                            KeybindButton.Text = input.KeyCode.Name
+                            Tween(KeybindButton, {BackgroundColor3 = FrostyUI.Theme.Primary}, 0.2)
+                            keybindConfig.ChangedCallback(input.KeyCode)
+                        elseif not gameProcessed and input.UserInputType == Enum.UserInputType.Keyboard then
+                            if input.KeyCode == KeybindElement.Value then
+                                keybindConfig.Callback()
+                            end
+                        end
+                    end)
+                    
+                    -- Set value method
+                    function KeybindElement:Set(keycode)
+                        KeybindElement.Value = keycode
+                        KeybindButton.Text = keycode.Name
+                        keybindConfig.ChangedCallback(keycode)
+                    end
+                    
+                    UpdateSectionSize()
+                    KeybindElement.Instance = Keybind
+                    return KeybindElement
+                end
+                
+                function Section:AddLabel(labelConfig)
+                    labelConfig = labelConfig or {}
+                    labelConfig.Text = labelConfig.Text or "Label"
+                    labelConfig.Color = labelConfig.Color or FrostyUI.Theme.Text
+                    
+                    local LabelElement = {}
+                    Window.ElementCount = Window.ElementCount + 1
+                    
+                    local Label = Create("Frame"){
+                        Name = "Label",
+                        Parent = SectionContent,
+                        Size = UDim2.new(1, 0, 0, 20),
+                        BackgroundTransparency = 1,
+                        LayoutOrder = Window.ElementCount
+                    }
+                    
+                    local LabelText = Create("TextLabel"){
+                        Name = "Text",
+                        Parent = Label,
+                        Size = UDim2.new(1, -10, 1, 0),
+                        Position = UDim2.new(0, 5, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = labelConfig.Text,
+                        Font = FrostyUI.Font,
+                        TextSize = 14,
+                        TextColor3 = labelConfig.Color,
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        TextWrapped = true
+                    }
+                    
+                    function LabelElement:Set(text, color)
+                        LabelText.Text = text or LabelText.Text
+                        if color then
+                            LabelText.TextColor3 = color
+                        end
+                        
+                        -- Resize based on text content
+                        local textSize = game:GetService("TextService"):GetTextSize(
+                            LabelText.Text,
+                            LabelText.TextSize,
+                            LabelText.Font,
+                            Vector2.new(LabelText.AbsoluteSize.X, math.huge)
+                        )
+                        
+                        Label.Size = UDim2.new(1, 0, 0, math.max(20, textSize.Y))
+                        UpdateSectionSize()
+                    end
+                    
+                    -- Set initial size
+                    LabelElement:Set(labelConfig.Text)
+                    
+                    UpdateSectionSize()
+                    LabelElement.Instance = Label
+                    return LabelElement
+                end
+                
+                return Section
+            end
+            
+            table.insert(Tab.Elements, Tab)
+            table.insert(Window.Tabs, Tab)
+            
+            return Tab
+        end
+        
+        -- Set up drag functionality
+        local dragInput, dragStart, startPos
+        
+        local function update(input)
+            local delta = input.Position - dragStart
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+        
+        TopBar.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                dragging = true
+                dragStart = input.Position
+                startPos = MainFrame.Position
+                
+                input.Changed:Connect(function()
+                    if input.UserInputState == Enum.UserInputState.End then
+                        dragging = false
+                    end
+                end)
+            end
+        end)
+        
+        TopBar.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                dragInput = input
+            end
+        end)
+        
+        UserInputService.InputChanged:Connect(function(input)
+            if input == dragInput and dragging then
+                update(input)
+            end
+        end)
+        
+        -- Fade in animation
+        MainFrame.Size = UDim2.new(0, config.Size.X.Offset, 0, 0)
+        Tween(MainFrame, {Size = config.Size}, 0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        
+        -- Remove blur effect
+        if BlurEffect then
+            Tween(BlurEffect, {Size = 0}, 0.5)
+            wait(0.5)
+            BlurEffect:Destroy()
+        end
+        
+        Window.MainFrame = MainFrame
+        return Window
+    end
+    
+    return Window
+end
+
+-- Notification system
+function Frosty:CreateNotification(config)
+    config = config or {}
+    config.Title = config.Title or "Notification"
+    config.Content = config.Content or "This is a notification"
+    config.Duration = config.Duration or 3
+    config.Image = config.Image
+    config.Callback = config.Callback or function() end
+    
+    -- Create notification container if it doesn't exist
+    local notificationContainer = CoreGui:FindFirstChild("FrostyNotifications")
+    if not notificationContainer then
+        notificationContainer = Create("ScreenGui"){
+            Name = "FrostyNotifications",
+            Parent = CoreGui,
+            ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        }
+        
+        local notificationLayout = Create("UIListLayout"){
+            Parent = notificationContainer,
+            Padding = UDim.new(0, 10),
+            FillDirection = Enum.FillDirection.Vertical,
+            HorizontalAlignment = Enum.HorizontalAlignment.Right,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            VerticalAlignment = Enum.VerticalAlignment.Bottom
+        }
+        
+        local notificationPadding = Create("UIPadding"){
+            Parent = notificationContainer,
+            PaddingBottom = UDim.new(0, 10),
+            PaddingRight = UDim.new(0, 10)
+        }
+    end
+    
+    -- Create notification
+    local notificationFrame = Create("Frame"){
+        Name = "Notification",
+        Parent = notificationContainer,
+        Size = UDim2.new(0, 250, 0, config.Image and 100 or 70),
+        Position = UDim2.new(1, 300, 1, -10),
+        BackgroundColor3 = FrostyUI.Theme.Primary,
+        BackgroundTransparency = 0,
+        AnchorPoint = Vector2.new(1, 1),
+        LayoutOrder = #notificationContainer:GetChildren() * -1
+    }
+    
+    local notificationCorner = Create("UICorner"){
+        Parent = notificationFrame,
+        CornerRadius = FrostyUI.Defaults.CornerRadius
+    }
+    
+    local notificationStroke = Create("UIStroke"){
+        Parent = notificationFrame,
+        Color = FrostyUI.Theme.Accent,
+        Thickness = FrostyUI.Defaults.StrokeThickness
+    }
+    
+    -- Notification content
+    local imageSize = config.Image and 30 or 0
+    local imageOffset = config.Image and 40 or 0
+    
+    if config.Image then
+        local notificationImage = Create("ImageLabel"){
+            Name = "Image",
+            Parent = notificationFrame,
+            Size = UDim2.new(0, 30, 0, 30),
+            Position = UDim2.new(0, 10, 0, 10),
+            BackgroundTransparency = 1,
+            Image = config.Image
+        }
+    end
+    
+    local notificationTitle = Create("TextLabel"){
+        Name = "Title",
+        Parent = notificationFrame,
+        Size = UDim2.new(1, -imageOffset - 20, 0, 20),
+        Position = UDim2.new(0, imageOffset, 0, 10),
+        BackgroundTransparency = 1,
+        Text = config.Title,
+        Font = FrostyUI.Font,
+        TextSize = 16,
+        TextColor3 = FrostyUI.Theme.Text,
+        TextXAlignment = Enum.TextXAlignment.Left
+    }
+    
+    local notificationContent = Create("TextLabel"){
+        Name = "Content",
+        Parent = notificationFrame,
+        Size = UDim2.new(1, -20, 0, config.Image and 60 or 30),
+        Position = UDim2.new(0, 10, 0, config.Image and 35 or 30),
+        BackgroundTransparency = 1,
+        Text = config.Content,
+        Font = FrostyUI.Font,
+        TextSize = 14,
+        TextColor3 = FrostyUI.Theme.Text,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        TextWrapped = true
+    }
+    
+    -- Animate notification
+    Tween(notificationFrame, {Position = UDim2.new(1, 0, 1, -10)}, 0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    
+    -- Close after duration
+    spawn(function()
+        wait(config.Duration)
+        Tween(notificationFrame, {BackgroundTransparency = 1}, 0.5)
+        Tween(notificationStroke, {Transparency = 1}, 0.5)
+        
+        for _, child in pairs(notificationFrame:GetChildren()) do
+            if child:IsA("TextLabel") or child:IsA("ImageLabel") then
+                Tween(child, {BackgroundTransparency = 1, TextTransparency = 1, ImageTransparency = 1}, 0.5)
+            end
+        end
+        
+        wait(0.5)
+        notificationFrame:Destroy()
+        config.Callback()
+    end)
+end
+
+return Frosty
