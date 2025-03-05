@@ -1,503 +1,507 @@
--- Frosty UI Library - Inspired by Rayfield and Orion UI
+-- Frosty Library - Inspired by Rayfield and Orion
 
 local Frosty = {}
 
 -- Configuration
 Frosty.Config = {
     Theme = {
-        Background = Color3.fromRGB(30, 30, 30),
-        Accent = Color3.fromRGB(50, 150, 250),  -- Blue accent, can be changed
-        Text = Color3.fromRGB(255, 255, 255),
-        SecondaryText = Color3.fromRGB(180, 180, 180),
-        Outline = Color3.fromRGB(45, 45, 45),
-        ButtonBackground = Color3.fromRGB(40, 40, 40),
-        ButtonHover = Color3.fromRGB(60, 60, 60),
-        ButtonActive = Color3.fromRGB(75, 75, 75),
-        SliderBackground = Color3.fromRGB(35, 35, 35),
-        SliderFill = Color3.fromRGB(50, 150, 250),
-        SliderThumb = Color3.fromRGB(255, 255, 255),
-        InputBackground = Color3.fromRGB(40, 40, 40),
-        InputBorder = Color3.fromRGB(60, 60, 60),
-        DropdownBackground = Color3.fromRGB(40, 40, 40),
-        DropdownHover = Color3.fromRGB(60, 60, 60),
-        CheckboxBackground = Color3.fromRGB(40, 40, 40),
-        CheckboxCheckmark = Color3.fromRGB(50, 150, 250),
+        MainColor = Color3.fromRGB(52, 152, 219), -- Blue - Frosty!
+        SecondaryColor = Color3.fromRGB(44, 62, 80), -- Dark Gray
+        TextColor = Color3.fromRGB(236, 240, 241), -- Light Gray
+        BackgroundColor = Color3.fromRGB(34, 40, 49), -- Darker Gray
+        ElementBackgroundColor = Color3.fromRGB(44, 62, 80), -- Dark Gray (lighter than background)
+        AccentColor = Color3.fromRGB(255, 255, 255), -- White (for highlights)
     },
-    Font = "rbxasset://fonts/families/SourceSansPro/SourceSansPro-Regular.json",
-    TitleFont = "rbxasset://fonts/families/SourceSansPro/SourceSansPro-Bold.json",
-    AnimationSpeed = 0.1, -- Adjust for smoother/faster animations
+    Font = Enum.Font.SourceSansBold,
+    AnimationSpeed = 0.2, -- Seconds for animation
+    TitleFont = Enum.Font.SourceSansBold,
 }
 
--- Helper Functions
-
-local function LerpColor(color1, color2, alpha)
-    return color1:Lerp(color2, alpha)
+-- Utility Functions
+local function Create(type, props)
+    local object = Instance.new(type)
+    for property, value in pairs(props) do
+        object[property] = value
+    end
+    return object
 end
 
-local function FadeIn(object, duration)
-    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local tween = game:GetService("TweenService"):Create(object, tweenInfo, {Transparency = 0})
+local function Tween(object, props)
+    local tweenInfo = TweenInfo.new(
+        Frosty.Config.AnimationSpeed,
+        Enum.EasingStyle.Quad,
+        Enum.EasingDirection.Out,
+        0,
+        false,
+        0
+    )
+    local tween = game:GetService("TweenService"):Create(object, tweenInfo, props)
     tween:Play()
+    return tween
 end
 
-local function FadeOut(object, duration)
-    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local tween = game:GetService("TweenService"):Create(object, tweenInfo, {Transparency = 1})
-    tween:Play()
-end
+-- UI Elements
 
-local function SlideIn(object, startPosition, endPosition, duration)
-	local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-	local tween = game:GetService("TweenService"):Create(object, tweenInfo, {Position = endPosition})
-	tween:Play()
-end
+-- Window Creation
+function Frosty.CreateUI(title, description)
+    local screenGui = Create("ScreenGui", {
+        Name = "FrostyUI",
+        ResetOnSpawn = false
+    })
+    screenGui.Parent = game:GetService("CoreGui")
 
-local function SlideOut(object, startPosition, endPosition, duration)
-	local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-	local tween = game:GetService("TweenService"):Create(object, tweenInfo, {Position = endPosition})
-	tween:Play()
-end
+    local mainWindow = Create("Frame", {
+        Name = "MainWindow",
+        Size = UDim2.new(0, 400, 0, 300),
+        Position = UDim2.new(0.5, -200, 0.5, -150),
+        BackgroundColor3 = Frosty.Config.Theme.BackgroundColor,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+    })
+    mainWindow.Parent = screenGui
+    mainWindow.Active = true -- For dragging
+    mainWindow.Draggable = true
 
-local function CreateButton(parent, text, callback)
-    local button = Instance.new("TextButton")
-    button.Parent = parent
-    button.BackgroundTransparency = 0
-    button.BackgroundColor3 = Frosty.Config.Theme.ButtonBackground
-    button.TextColor3 = Frosty.Config.Theme.Text
-    button.Font = Frosty.Config.Font
-    button.TextSize = 14
-    button.Text = text
-    button.BorderSizePixel = 0
+    -- Title Bar
+    local titleBar = Create("Frame", {
+        Name = "TitleBar",
+        Size = UDim2.new(1, 0, 0, 30),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Frosty.Config.Theme.MainColor,
+        BorderSizePixel = 0,
+    })
+    titleBar.Parent = mainWindow
 
-    button.MouseEnter:Connect(function()
-        button.BackgroundColor3 = Frosty.Config.Theme.ButtonHover
+    local titleLabel = Create("TextLabel", {
+        Name = "TitleLabel",
+        Size = UDim2.new(1, -60, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1,
+        TextColor3 = Frosty.Config.Theme.TextColor,
+        Text = title,
+        Font = Frosty.Config.TitleFont,
+        TextSize = 18,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+    })
+    titleLabel.Parent = titleBar
+
+    local closeButton = Create("TextButton", {
+        Name = "CloseButton",
+        Size = UDim2.new(0, 30, 1, 0),
+        Position = UDim2.new(1, -30, 0, 0),
+        BackgroundColor3 = Frosty.Config.Theme.MainColor,
+        TextColor3 = Frosty.Config.Theme.TextColor,
+        Text = "X",
+        Font = Frosty.Config.Font,
+        TextSize = 16,
+        BorderSizePixel = 0,
+    })
+    closeButton.Parent = titleBar
+    closeButton.MouseButton1Click:Connect(function()
+        screenGui:Destroy()
     end)
 
-    button.MouseLeave:Connect(function()
-        button.BackgroundColor3 = Frosty.Config.Theme.ButtonBackground
+
+   -- Description Label
+    local descriptionLabel = Create("TextLabel", {
+        Name = "DescriptionLabel",
+        Size = UDim2.new(1, -20, 0, 40),
+        Position = UDim2.new(0, 10, 0, 30),
+        BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1,
+        TextColor3 = Frosty.Config.Theme.TextColor,
+        Text = description,
+        Font = Frosty.Config.Font,
+        TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Top,
+        TextWrapped = true,
+    })
+    descriptionLabel.Parent = mainWindow
+    descriptionLabel.TextXAlignment = Enum.TextXAlignment.Center -- Center it
+
+    -- Tab Container
+    local tabContainer = Create("Frame", {
+        Name = "TabContainer",
+        Size = UDim2.new(1, 0, 0, 30),
+        Position = UDim2.new(0, 0, 0, 70), -- Adjust position based on the description
+        BackgroundColor3 = Frosty.Config.Theme.ElementBackgroundColor,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+    })
+    tabContainer.Parent = mainWindow
+
+    -- Content Container (Where the actual UI elements will go)
+    local contentContainer = Create("Frame", {
+        Name = "ContentContainer",
+        Size = UDim2.new(1, 0, 1, -100), -- Takes up rest of the window
+        Position = UDim2.new(0, 0, 0, 100), -- Below tabs.  Adjust based on tabs
+        BackgroundColor3 = Frosty.Config.Theme.BackgroundColor,
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        LayoutOrder = 1,
+    })
+    contentContainer.Parent = mainWindow
+
+    local tabs = {} -- Store tab objects
+
+    -- Function to create a tab
+    local function CreateTab(tabName)
+        local tabButton = Create("TextButton", {
+            Name = tabName .. "TabButton",
+            Size = UDim2.new(0, 100, 1, 0),
+            Position = UDim2.new(0, 100 * #tabs, 0, 0),
+            BackgroundColor3 = Frosty.Config.Theme.ElementBackgroundColor,
+            TextColor3 = Frosty.Config.Theme.TextColor,
+            Text = tabName,
+            Font = Frosty.Config.Font,
+            TextSize = 14,
+            BorderSizePixel = 0,
+            AutoButtonColor = false,
+            LayoutOrder = #tabs + 1,
+        })
+        tabButton.Parent = tabContainer
+
+        local tabContent = Create("Frame", {
+            Name = tabName .. "TabContent",
+            Size = UDim2.new(1, 0, 1, 0),
+            Position = UDim2.new(0, 0, 0, 0),
+            BackgroundColor3 = Frosty.Config.Theme.BackgroundColor,
+            BorderSizePixel = 0,
+            Visible = false,
+            ClipsDescendants = true,
+        })
+        tabContent.Parent = contentContainer
+
+        -- UIGridLayout for content inside each tab
+        local gridLayout = Create("UIGridLayout", {
+            Name = "GridLayout",
+            CellSize = UDim2.new(0.33,0,0.25,0),
+            CellPadding = UDim2.new(0.01,0,0.01,0)
+        })
+        gridLayout.Parent = tabContent
+        gridLayout:ApplyLayout(Enum.FillDirection.Horizontal)
+
+        -- Initial state: show first tab
+        if #tabs == 0 then
+            tabContent.Visible = true
+            tabButton.BackgroundColor3 = Frosty.Config.Theme.MainColor
+        end
+
+        tabButton.MouseButton1Click:Connect(function()
+            -- Hide all other tabs
+            for i, tab in ipairs(tabs) do
+                tab.Content.Visible = false
+                tab.Button.BackgroundColor3 = Frosty.Config.Theme.ElementBackgroundColor
+            end
+
+            -- Show this tab
+            tabContent.Visible = true
+            tabButton.BackgroundColor3 = Frosty.Config.Theme.MainColor
+        end)
+
+        local tab = {
+            Button = tabButton,
+            Content = tabContent,
+            GridLayout = gridLayout,
+            Name = tabName,
+        }
+        table.insert(tabs, tab)
+
+        return tab
+    end
+
+
+    return {
+        ScreenGui = screenGui,
+        MainWindow = mainWindow,
+        ContentContainer = contentContainer,
+        CreateTab = CreateTab,
+        Tabs = tabs, -- Return the table of tabs
+    }
+end
+
+
+
+-- Toggle Button
+function Frosty.CreateToggle(tab, text, callback)
+    if not tab or not tab.Content then
+        warn("Invalid tab passed to CreateToggle.")
+        return
+    end
+
+    local toggleButton = Create("TextButton", {
+        Name = text .. "Toggle",
+        Size = UDim2.new(1/3, -5, 0.20, 0), -- takes 1/3 width, with some margin
+        BackgroundColor3 = Frosty.Config.Theme.ElementBackgroundColor,
+        TextColor3 = Frosty.Config.Theme.TextColor,
+        Text = text,
+        Font = Frosty.Config.Font,
+        TextSize = 14,
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+        LayoutOrder = #tab.Content:GetChildren() + 1,
+    })
+
+    toggleButton.Parent = tab.Content
+    toggleButton.Parent = tab.Content
+
+    local state = false -- Initial state
+
+    local function updateVisuals()
+        if state then
+            toggleButton.BackgroundColor3 = Frosty.Config.Theme.MainColor
+            toggleButton.Text = text .. " (On)"
+        else
+            toggleButton.BackgroundColor3 = Frosty.Config.Theme.ElementBackgroundColor
+            toggleButton.Text = text .. " (Off)"
+        end
+    end
+
+    updateVisuals()
+
+    toggleButton.MouseButton1Click:Connect(function()
+        state = not state
+        updateVisuals()
+        if callback then
+            callback(state)
+        end
     end)
+
+    return toggleButton
+end
+
+-- Slider
+function Frosty.CreateSlider(tab, text, min, max, defaultValue, callback)
+    if not tab or not tab.Content then
+        warn("Invalid tab passed to CreateSlider.")
+        return
+    end
+
+    local sliderFrame = Create("Frame", {
+        Name = text .. "SliderFrame",
+        Size = UDim2.new(1/3, -5, 0.20, 0),
+        BackgroundColor3 = Frosty.Config.Theme.BackgroundColor,
+        BorderSizePixel = 0,
+        LayoutOrder = #tab.Content:GetChildren() + 1,
+    })
+    sliderFrame.Parent = tab.Content
+
+    local label = Create("TextLabel", {
+        Name = text .. "Label",
+        Size = UDim2.new(1, 0, 0, 20),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1,
+        TextColor3 = Frosty.Config.Theme.TextColor,
+        Text = text .. ": " .. defaultValue,
+        Font = Frosty.Config.Font,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+    label.Parent = sliderFrame
+
+    local slider = Create("Slider", {
+        Name = text .. "Slider",
+        Size = UDim2.new(1, -10, 0, 20),
+        Position = UDim2.new(0, 5, 0, 20),
+        BackgroundColor3 = Frosty.Config.Theme.ElementBackgroundColor,
+        BorderColor3 = Frosty.Config.Theme.AccentColor,
+        Min = min,
+        Max = max,
+        Value = defaultValue,
+    })
+    slider.Parent = sliderFrame
+
+    slider.Changed:Connect(function()
+        label.Text = text .. ": " .. string.format("%.2f", slider.Value) -- Format to 2 decimal places
+        if callback then
+            callback(slider.Value)
+        end
+    end)
+
+    return slider
+end
+
+-- Button
+function Frosty.CreateButton(tab, text, callback)
+    if not tab or not tab.Content then
+        warn("Invalid tab passed to CreateButton.")
+        return
+    end
+
+    local button = Create("TextButton", {
+        Name = text .. "Button",
+        Size = UDim2.new(1/3, -5, 0.20, 0),
+        BackgroundColor3 = Frosty.Config.Theme.MainColor,
+        TextColor3 = Frosty.Config.Theme.TextColor,
+        Text = text,
+        Font = Frosty.Config.Font,
+        TextSize = 14,
+        BorderSizePixel = 0,
+        AutoButtonColor = false,
+        LayoutOrder = #tab.Content:GetChildren() + 1,
+    })
+    button.Parent = tab.Content
 
     button.MouseButton1Click:Connect(function()
-        button.BackgroundColor3 = Frosty.Config.Theme.ButtonActive
-        task.wait(0.1)
-        button.BackgroundColor3 = Frosty.Config.Theme.ButtonHover
-        callback()
+        if callback then
+            callback()
+        end
     end)
 
     return button
 end
 
+-- Textbox
+function Frosty.CreateTextbox(tab, text, placeholder, callback)
+    if not tab or not tab.Content then
+        warn("Invalid tab passed to CreateTextbox.")
+        return
+    end
 
--- Window Creation
+    local textboxFrame = Create("Frame", {
+        Name = text .. "TextboxFrame",
+        Size = UDim2.new(1/3, -5, 0.20, 0),
+        BackgroundColor3 = Frosty.Config.Theme.BackgroundColor,
+        BorderSizePixel = 0,
+        LayoutOrder = #tab.Content:GetChildren() + 1,
+    })
+    textboxFrame.Parent = tab.Content
 
-function Frosty.Create(title)
-    local window = Instance.new("ScreenGui")
-    window.Name = "FrostyWindow"
-    window.ResetOnSpawn = false
+    local label = Create("TextLabel", {
+        Name = text .. "Label",
+        Size = UDim2.new(1, 0, 0, 20),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1,
+        TextColor3 = Frosty.Config.Theme.TextColor,
+        Text = text,
+        Font = Frosty.Config.Font,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+    label.Parent = textboxFrame
 
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Parent = window
-    mainFrame.Size = UDim2.new(0, 400, 0, 300)  -- Initial size, adjust as needed
-    mainFrame.Position = UDim2.new(0.3, 0, 0.3, 0) -- Centered-ish
-    mainFrame.BackgroundTransparency = 0
-    mainFrame.BackgroundColor3 = Frosty.Config.Theme.Background
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Draggable = true -- Inspired by Rayfield
+    local textbox = Create("TextBox", {
+        Name = text .. "Textbox",
+        Size = UDim2.new(1, -10, 0, 20),
+        Position = UDim2.new(0, 5, 0, 20),
+        BackgroundColor3 = Frosty.Config.Theme.ElementBackgroundColor,
+        TextColor3 = Frosty.Config.Theme.TextColor,
+        PlaceholderText = placeholder,
+        PlaceholderColor3 = Color3.new(0.5, 0.5, 0.5),
+        Font = Frosty.Config.Font,
+        TextSize = 14,
+    })
+    textbox.Parent = textboxFrame
 
-	--Drop Shadow
-	local dropShadow = Instance.new("ImageLabel")
-	dropShadow.Parent = mainFrame
-	dropShadow.Size = UDim2.new(1,0,1,0)
-	dropShadow.Position = UDim2.new(0,0,0,0)
-	dropShadow.ZIndex = 0
-	dropShadow.Image = "rbxassetid://6342256976"
-	dropShadow.ScaleType = Enum.ScaleType.Slice
-	dropShadow.SliceCenter = Rect.new(12,12,12,12)
-	dropShadow.Visible = true
-	dropShadow.BackgroundTransparency = 1
-
-    local titleBar = Instance.new("Frame")
-    titleBar.Parent = mainFrame
-    titleBar.Size = UDim2.new(1, 0, 0, 30)
-    titleBar.Position = UDim2.new(0, 0, 0, 0)
-    titleBar.BackgroundTransparency = 0
-    titleBar.BackgroundColor3 = Frosty.Config.Theme.Outline
-    titleBar.BorderSizePixel = 0
-
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Parent = titleBar
-    titleLabel.Size = UDim2.new(0.8, 0, 1, 0)
-    titleLabel.Position = UDim2.new(0, 0, 0, 0)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.TextColor3 = Frosty.Config.Theme.Text
-    titleLabel.Font = Frosty.Config.TitleFont
-    titleLabel.TextSize = 16
-    titleLabel.Text = title
-    titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    titleLabel.TextYAlignment = Enum.TextYAlignment.Center
-	titleLabel.TextWrapped = true
-	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
-
-    local closeButton = Instance.new("TextButton")
-    closeButton.Parent = titleBar
-    closeButton.Size = UDim2.new(0, 30, 1, 0)
-    closeButton.Position = UDim2.new(1, -30, 0, 0)
-    closeButton.BackgroundTransparency = 0
-    closeButton.BackgroundColor3 = Frosty.Config.Theme.ButtonBackground
-    closeButton.TextColor3 = Frosty.Config.Theme.Text
-    closeButton.Font = Frosty.Config.Font
-    closeButton.TextSize = 20
-    closeButton.Text = "X"
-    closeButton.BorderSizePixel = 0
-
-    closeButton.MouseEnter:Connect(function()
-        closeButton.BackgroundColor3 = Frosty.Config.Theme.ButtonHover
+    textbox.FocusLost:Connect(function(enterPressed)
+        if callback then
+            callback(textbox.Text, enterPressed)
+        end
     end)
 
-    closeButton.MouseLeave:Connect(function()
-        closeButton.BackgroundColor3 = Frosty.Config.Theme.ButtonBackground
-    end)
-
-    closeButton.MouseButton1Click:Connect(function()
-        window:Destroy()
-    end)
-
-    local contentFrame = Instance.new("Frame")
-    contentFrame.Parent = mainFrame
-    contentFrame.Size = UDim2.new(1, 0, 1, -30)
-    contentFrame.Position = UDim2.new(0, 0, 0, 30)
-    contentFrame.BackgroundTransparency = 1
-    contentFrame.BorderSizePixel = 0
-
-    window.Enabled = true -- Make visible upon creation.
-
-	-- Initialize tab list
-	local tabs = {}
-	local currentTab = nil
-
-    -- Functions to be used within the window.
-	local self = {
-		Window = window,
-		MainFrame = mainFrame,
-		ContentFrame = contentFrame,
-		Tabs = tabs,
-		CurrentTab = currentTab
-	}
-
-
-    -- Define the window's functions and return it
-
-    function self:AddTab(tabName)
-		local tabButton = CreateButton(titleBar, tabName, function()
-			if self.CurrentTab then
-				self.CurrentTab.Frame.Visible = false
-				self.CurrentTab.Button.BackgroundColor3 = Frosty.Config.Theme.ButtonBackground
-			end
-			-- Ensure the Frame exists before trying to set Visible
-			if self.Tabs[tabName] and self.Tabs[tabName].Frame then
-				self.Tabs[tabName].Frame.Visible = true
-				self.Tabs[tabName].Button.BackgroundColor3 = Frosty.Config.Theme.ButtonActive
-				self.CurrentTab = self.Tabs[tabName]
-			else
-				warn("Tab frame not created for tab: " .. tabName)
-			end
-		end)
-
-		tabButton.Size = UDim2.new(0, 80, 1, 0)
-		tabButton.Position = UDim2.new(0, 30 + (#self.Tabs * 80), 0, 0) -- Adjust positioning
-
-		local tabFrame = Instance.new("Frame")
-		tabFrame.Parent = self.ContentFrame
-		tabFrame.Size = UDim2.new(1,0,1,0)
-		tabFrame.Position = UDim2.new(0,0,0,0)
-		tabFrame.BackgroundTransparency = 1
-		tabFrame.BorderSizePixel = 0
-		tabFrame.Visible = false  -- Start hidden
-
-		self.Tabs[tabName] = {
-			Button = tabButton,
-			Frame = tabFrame
-		}
-		self.Tabs[tabName].Button.Name = tabName
-
-		-- Set the first tab to be visible by default
-		if #self.Tabs == 1 then
-			self.CurrentTab = self.Tabs[tabName]
-			self.CurrentTab.Frame.Visible = true
-			self.CurrentTab.Button.BackgroundColor3 = Frosty.Config.Theme.ButtonActive
-		end
-        return tabFrame
-
-	end
-
-
-
-    -- Helper functions to add elements inside a tab
-
-	--Create a section inside a tab
-	function self:AddSection(tabFrame, sectionName)
-		local section = Instance.new("Frame")
-		section.Parent = tabFrame
-		section.Size = UDim2.new(0.95, 0, 0, 30)  -- Adjust height as needed
-		section.Position = UDim2.new(0.025, 0, 0, (section.Parent:GetChildrenCount() - 1) * 35) --Dynamic Y pos
-		section.BackgroundTransparency = 0
-		section.BackgroundColor3 = Frosty.Config.Theme.Outline
-		section.BorderSizePixel = 0
-
-		local sectionLabel = Instance.new("TextLabel")
-		sectionLabel.Parent = section
-		sectionLabel.Size = UDim2.new(1, 0, 1, 0)
-		sectionLabel.Position = UDim2.new(0, 0, 0, 0)
-		sectionLabel.BackgroundTransparency = 1
-		sectionLabel.TextColor3 = Frosty.Config.Theme.Text
-		sectionLabel.Font = Frosty.Config.Font
-		sectionLabel.TextSize = 14
-		sectionLabel.Text = sectionName
-		sectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-		sectionLabel.TextYAlignment = Enum.TextYAlignment.Center
-		sectionLabel.TextWrapped = true
-		sectionLabel.TextTruncate = Enum.TextTruncate.AtEnd
-		return section
-	end
-
-    function self:AddButton(tabFrame, text, callback)
-		local buttonPosition = UDim2.new(0.025, 0, 0, ((tabFrame:GetChildrenCount() - 1) * 40) + 35 )
-        local button = CreateButton(tabFrame, text, callback)
-		button.Size = UDim2.new(0.95, 0, 0, 30)
-		button.Position = buttonPosition
-        return button
-    end
-
-    function self:AddToggle(tabFrame, text, defaultValue, callback)
-		local togglePosition = UDim2.new(0.025, 0, 0, ((tabFrame:GetChildrenCount() - 1) * 40) + 35)
-
-        local toggleFrame = Instance.new("Frame")
-        toggleFrame.Parent = tabFrame
-        toggleFrame.Size = UDim2.new(0.95, 0, 0, 30)
-        toggleFrame.Position = togglePosition
-        toggleFrame.BackgroundTransparency = 1
-        toggleFrame.BorderSizePixel = 0
-
-        local label = Instance.new("TextLabel")
-        label.Parent = toggleFrame
-        label.Size = UDim2.new(0.7, 0, 1, 0)
-        label.Position = UDim2.new(0, 0, 0, 0)
-        label.BackgroundTransparency = 1
-        label.TextColor3 = Frosty.Config.Theme.Text
-        label.Font = Frosty.Config.Font
-        label.TextSize = 14
-        label.Text = text
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.TextYAlignment = Enum.TextYAlignment.Center
-        label.TextWrapped = true
-        label.TextTruncate = Enum.TextTruncate.AtEnd
-
-        local checkbox = Instance.new("TextButton")
-        checkbox.Parent = toggleFrame
-        checkbox.Size = UDim2.new(0, 30, 1, 0)
-        checkbox.Position = UDim2.new(1, -30, 0, 0)
-        checkbox.BackgroundTransparency = 0
-        checkbox.BackgroundColor3 = Frosty.Config.Theme.CheckboxBackground
-        checkbox.TextColor3 = Frosty.Config.Theme.Text
-        checkbox.Font = Frosty.Config.Font
-        checkbox.TextSize = 20
-        checkbox.Text = defaultValue and "✓" or "" -- Checkmark
-        checkbox.BorderSizePixel = 0
-
-        local isToggled = defaultValue
-
-        checkbox.MouseButton1Click:Connect(function()
-            isToggled = not isToggled
-            checkbox.Text = isToggled and "✓" or ""
-            if callback then
-                callback(isToggled)
-            end
-        end)
-
-        return toggleFrame -- Allows further customization if needed
-    end
-
-    function self:AddSlider(tabFrame, text, minValue, maxValue, defaultValue, callback)
-		local sliderPosition = UDim2.new(0.025, 0, 0, ((tabFrame:GetChildrenCount() - 1) * 40) + 35)
-
-        local sliderFrame = Instance.new("Frame")
-        sliderFrame.Parent = tabFrame
-        sliderFrame.Size = UDim2.new(0.95, 0, 0, 30)
-        sliderFrame.Position = sliderPosition
-        sliderFrame.BackgroundTransparency = 1
-        sliderFrame.BorderSizePixel = 0
-
-        local label = Instance.new("TextLabel")
-        label.Parent = sliderFrame
-        label.Size = UDim2.new(0.4, 0, 1, 0)
-        label.Position = UDim2.new(0, 0, 0, 0)
-        label.BackgroundTransparency = 1
-        label.TextColor3 = Frosty.Config.Theme.Text
-        label.Font = Frosty.Config.Font
-        label.TextSize = 14
-        label.Text = text .. ": " .. defaultValue
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.TextYAlignment = Enum.TextYAlignment.Center
-        label.TextWrapped = true
-        label.TextTruncate = Enum.TextTruncate.AtEnd
-
-        local sliderBackground = Instance.new("Frame")
-        sliderBackground.Parent = sliderFrame
-        sliderBackground.Size = UDim2.new(0.5, 0, 0.5, 0)
-        sliderBackground.Position = UDim2.new(0.5, 0, 0.25, 0)
-        sliderBackground.BackgroundTransparency = 0
-        sliderBackground.BackgroundColor3 = Frosty.Config.Theme.SliderBackground
-        sliderBackground.BorderSizePixel = 0
-
-        local sliderFill = Instance.new("Frame")
-        sliderFill.Parent = sliderBackground
-        sliderFill.Size = UDim2.new((defaultValue - minValue) / (maxValue - minValue), 1, 1, 1)
-        sliderFill.Position = UDim2.new(0, 0, 0, 0)
-        sliderFill.BackgroundTransparency = 0
-        sliderFill.BackgroundColor3 = Frosty.Config.Theme.SliderFill
-        sliderFill.BorderSizePixel = 0
-
-        local sliderThumb = Instance.new("Frame")
-        sliderThumb.Parent = sliderFill
-        sliderThumb.Size = UDim2.new(0, 10, 1, 1)
-        sliderThumb.Position = UDim2.new(1, -5, 0, 0)
-        sliderThumb.BackgroundTransparency = 0
-        sliderThumb.BackgroundColor3 = Frosty.Config.Theme.SliderThumb
-        sliderThumb.BorderSizePixel = 0
-
-        local dragging = false
-
-        sliderBackground.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = true
-            end
-        end)
-
-        sliderBackground.InputEnded:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                dragging = false
-            end
-        end)
-
-        sliderBackground.MouseMoved:Connect(function(x, y)
-            if dragging then
-                local xPos = x - sliderBackground.AbsolutePosition.X
-                local width = sliderBackground.AbsoluteSize.X
-                local ratio = math.clamp(xPos / width, 0, 1)
-                local value = minValue + (maxValue - minValue) * ratio
-                defaultValue = value
-                sliderFill.Size = UDim2.new(ratio, 1, 1, 1)
-                label.Text = text .. ": " .. string.format("%.2f", value)
-                if callback then
-                    callback(value)
-                end
-            end
-        end)
-
-        return sliderFrame
-    end
-
-    function self:AddLabel(tabFrame, text)
-		local labelPosition = UDim2.new(0.025, 0, 0, ((tabFrame:GetChildrenCount() - 1) * 40) + 35)
-
-        local label = Instance.new("TextLabel")
-        label.Parent = tabFrame
-        label.Size = UDim2.new(0.95, 0, 0, 30)
-        label.Position = labelPosition
-        label.BackgroundTransparency = 1
-        label.TextColor3 = Frosty.Config.Theme.Text
-        label.Font = Frosty.Config.Font
-        label.TextSize = 14
-        label.Text = text
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.TextYAlignment = Enum.TextYAlignment.Center
-        label.TextWrapped = true
-        label.TextTruncate = Enum.TextTruncate.AtEnd
-
-        return label
-    end
-
-	function self:AddTextbox(tabFrame, text, placeholder, callback)
-		local textboxPosition = UDim2.new(0.025, 0, 0, ((tabFrame:GetChildrenCount() - 1) * 40) + 35)
-		local textBoxFrame = Instance.new("Frame")
-		textBoxFrame.Parent = tabFrame
-		textBoxFrame.Size = UDim2.new(0.95, 0, 0, 30)
-		textBoxFrame.Position = textboxPosition
-		textBoxFrame.BackgroundTransparency = 1
-		textBoxFrame.BorderSizePixel = 0
-
-		local label = Instance.new("TextLabel")
-		label.Parent = textBoxFrame
-		label.Size = UDim2.new(0.3, 0, 1, 0)
-		label.Position = UDim2.new(0, 0, 0, 0)
-		label.BackgroundTransparency = 1
-		label.TextColor3 = Frosty.Config.Theme.Text
-		label.Font = Frosty.Config.Font
-		label.TextSize = 14
-		label.Text = text
-		label.TextXAlignment = Enum.TextXAlignment.Left
-		label.TextYAlignment = Enum.TextYAlignment.Center
-		label.TextWrapped = true
-		label.TextTruncate = Enum.TextTruncate.AtEnd
-
-
-		local textBox = Instance.new("TextBox")
-		textBox.Parent = textBoxFrame
-		textBox.Size = UDim2.new(0.65, 0, 1, 0)
-		textBox.Position = UDim2.new(0.35, 0, 0, 0)
-		textBox.BackgroundTransparency = 0
-		textBox.BackgroundColor3 = Frosty.Config.Theme.InputBackground
-		textBox.BorderColor3 = Frosty.Config.Theme.InputBorder
-		textBox.TextColor3 = Frosty.Config.Theme.Text
-		textBox.Font = Frosty.Config.Font
-		textBox.TextSize = 14
-		textBox.PlaceholderText = placeholder
-		textBox.PlaceholderColor3 = Frosty.Config.Theme.SecondaryText
-		textBox.ClearTextOnFocus = false
-
-		textBox.Focused:Connect(function()
-			textBox.BorderColor3 = Frosty.Config.Theme.Accent
-		end)
-
-		textBox.FocusLost:Connect(function()
-			textBox.BorderColor3 = Frosty.Config.Theme.InputBorder
-		end)
-
-		textBox.Changed:Connect(function()
-			if callback then
-				callback(textBox.Text)
-			end
-		end)
-
-		return textBoxFrame
-	end
-
-    return self
+    return textbox
 end
 
+--Dropdown
+function Frosty.CreateDropdown(tab, text, options, callback)
+    if not tab or not tab.Content then
+        warn("Invalid tab passed to CreateDropdown.")
+        return
+    end
 
--- Example Usage:
+    local dropdownFrame = Create("Frame", {
+        Name = text .. "DropdownFrame",
+        Size = UDim2.new(1/3, -5, 0.20, 0),
+        BackgroundColor3 = Frosty.Config.Theme.BackgroundColor,
+        BorderSizePixel = 0,
+        LayoutOrder = #tab.Content:GetChildren() + 1,
+        ClipsDescendants = true
+    })
+    dropdownFrame.Parent = tab.Content
 
-local frostyWindow = Frosty.Create("Frosty UI Example")
+    local label = Create("TextLabel", {
+        Name = text .. "Label",
+        Size = UDim2.new(1, 0, 0, 20),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1,
+        TextColor3 = Frosty.Config.Theme.TextColor,
+        Text = text,
+        Font = Frosty.Config.Font,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+    label.Parent = dropdownFrame
 
-local tab1Frame = frostyWindow:AddTab("Tab 1")
-local section1 = frostyWindow:AddSection(tab1Frame, "Section 1")
-local button1 = frostyWindow:AddButton(tab1Frame, "Click Me", function()
-    print("Button 1 Clicked!")
-end)
+    local dropdownButton = Create("TextButton", {
+        Name = text .. "DropdownButton",
+        Size = UDim2.new(1, -10, 0, 20),
+        Position = UDim2.new(0, 5, 0, 20),
+        BackgroundColor3 = Frosty.Config.Theme.ElementBackgroundColor,
+        TextColor3 = Frosty.Config.Theme.TextColor,
+        Text = options[1],
+        Font = Frosty.Config.Font,
+        TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextYAlignment = Enum.TextYAlignment.Center,
+        AutoButtonColor = false,
+    })
+    dropdownButton.Parent = dropdownFrame
 
-local tab2Frame = frostyWindow:AddTab("Tab 2")
-local toggle1 = frostyWindow:AddToggle(tab2Frame, "Enable Feature", false, function(state)
-    print("Toggle state:", state)
-end)
-local slider1 = frostyWindow:AddSlider(tab2Frame, "Volume", 0, 100, 50, function(value)
-    print("Volume:", value)
-end)
-local label1 = frostyWindow:AddLabel(tab2Frame, "This is a label.")
+    local optionsFrame = Create("Frame", {
+        Name = "OptionsFrame",
+        Size = UDim2.new(1, 0, 0, 0),
+        Position = UDim2.new(0, 0, 1, 0),
+        BackgroundColor3 = Frosty.Config.Theme.ElementBackgroundColor,
+        BorderSizePixel = 0,
+        Visible = false,
+        ClipsDescendants = true,
+        ZIndex = 2
+    })
+    optionsFrame.Parent = dropdownFrame
+    optionsFrame:SetAttribute("Height", 0)
 
-local tab3Frame = frostyWindow:AddTab("Tab 3")
-local textbox1 = frostyWindow:AddTextbox(tab3Frame, "Input:", "Enter text here", function(text)
-    print("Text entered:", text)
-end)
+    local dropdownOpen = false
 
+    local function toggleDropdown()
+        dropdownOpen = not dropdownOpen
+        if dropdownOpen then
+            Tween(optionsFrame, {Size = UDim2.new(1,0, 0, 20*#options)})
+            optionsFrame.Visible = true
+        else
+            Tween(optionsFrame, {Size = UDim2.new(1,0,0,0)})
+            task.wait(Frosty.Config.AnimationSpeed)
+            optionsFrame.Visible = false
+        end
+    end
+
+    dropdownButton.MouseButton1Click:Connect(toggleDropdown)
+
+    for i, option in ipairs(options) do
+        local optionButton = Create("TextButton", {
+            Name = option .. "Option",
+            Size = UDim2.new(1, 0, 0, 20),
+            Position = UDim2.new(0, 0, 0, 20 * (i - 1)),
+            BackgroundColor3 = Frosty.Config.Theme.ElementBackgroundColor,
+            TextColor3 = Frosty.Config.Theme.TextColor,
+            Text = option,
+            Font = Frosty.Config.Font,
+            TextSize = 14,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Center,
+            AutoButtonColor = false,
+        })
+        optionButton.Parent = optionsFrame
+
+        optionButton.MouseButton1Click:Connect(function()
+            dropdownButton.Text = option
+            toggleDropdown()
+
+            if callback then
+                callback(option)
+            end
+        end)
+    end
+    return dropdownButton
+end
 return Frosty
