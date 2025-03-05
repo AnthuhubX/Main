@@ -413,4 +413,21 @@ function UI:CreateKeybind(c)
         else
             trigger.Text = "..."
             cnx[cnxName] = UIS.InputBegan:Connect(function(input)
-                if input.User
+                if input.UserInputType == Enum.UserInputType.Keyboard then
+					cnx[cnxName]:Disconnect()
+					cnx[cnxName] = nil
+					trigger.Text = input.KeyCode.Name
+					task.wait()
+					keybind = input.KeyCode
+				elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+					cnx[cnxName]:Disconnect()
+					cnx[cnxName] = nil
+					trigger.Text = keybind.Name
+				end
+			end)
+		end
+	end)
+	return textLabel
+end
+
+return UI
