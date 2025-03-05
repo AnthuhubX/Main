@@ -1,175 +1,416 @@
--- SoulUI Library
-local SoulUI = {}
+local UI = {}
+local cnx = {}
+local notified = false
 
--- Function to create a ScreenGui
-function SoulUI:createScreenGui(name)
-    local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = name or "SoulUI"
-    screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    return screenGui
-end
+local CoreGui = game:GetService("CoreGui")
+local UIS = game:GetService("UserInputService")
+local screenGui = Instance.new("ScreenGui")
 
--- Function to create a Frame
-function SoulUI:createFrame(parent, name, position, size, bgColor)
+function UI:CreateWindow(c)
     local frame = Instance.new("Frame")
-    frame.Name = name or "Frame"
-    frame.Position = position or UDim2.new(0.5, 0, 0.5, 0)
-    frame.Size = size or UDim2.new(0.3, 0, 0.3, 0)
-    frame.BackgroundColor3 = bgColor or Color3.fromRGB(255, 255, 255)
-    frame.Parent = parent
-    return frame
+    local title = Instance.new("TextLabel")
+    local elemFrame = Instance.new("Frame")
+    local uipl = Instance.new("UIPageLayout")
+    local tabSF = Instance.new("ScrollingFrame")
+    local uill = Instance.new("UIListLayout")
+    local settingsButton = Instance.new("ImageButton")
+    local settingsFrame = Instance.new("Frame")
+    local settingsUILL = Instance.new("UIListLayout")
+    local tglFrame = Instance.new("Frame")
+    local tglTL = Instance.new("TextLabel")
+    local tglTrigger = Instance.new("TextButton")
+    local destroy = Instance.new("TextButton")
+    local keybind = Enum.KeyCode.LeftControl
+
+    screenGui.Name = "frosty"
+    screenGui.ResetOnSpawn = false
+    screenGui.IgnoreGuiInset = true
+    screenGui.Parent = CoreGui
+
+    frame.BackgroundColor3 = Color3.fromRGB(200, 230, 255) -- Frosty blue
+    frame.BorderSizePixel = 0
+    frame.Position = UDim2.new(0.35, 0, 0.35, 0)
+    frame.ClipsDescendants = true
+    frame.Size = UDim2.new(0.3, 0, 0.3, 0)
+    frame.Parent = screenGui
+
+    title.Text = c.Title
+    title.BackgroundColor3 = Color3.fromRGB(173, 216, 230) -- Lighter frosty blue
+    title.BorderSizePixel = 0
+    title.Name = "Title"
+    title.Size = UDim2.new(1, 0, 0.1, 0)
+    title.Font = Enum.Font.SourceSans
+    title.TextColor3 = Color3.new(0, 0, 0) -- Black text
+    title.TextScaled = true
+    title.Parent = frame
+
+    settingsFrame.BackgroundColor3 = Color3.fromRGB(200, 230, 255) -- Frosty blue
+    settingsFrame.BorderSizePixel = 0
+    settingsFrame.Position = UDim2.new(0.2, 0, 0.1, 0)
+    settingsFrame.Size = UDim2.new(0.8, 0, 0.9, 0)
+    settingsFrame.Visible = false
+    settingsFrame.Name = "Settings"
+    settingsFrame.Parent = frame
+
+    settingsUILL.SortOrder = Enum.SortOrder.LayoutOrder
+    settingsUILL.Parent = settingsFrame
+
+    tglFrame.BackgroundTransparency = 1
+    tglFrame.BorderSizePixel = 0
+    tglFrame.Size = UDim2.new(1, 0, 0.2, 0)
+    tglFrame.Parent = settingsFrame
+
+    tglTL.BackgroundColor3 = Color3.fromRGB(173, 216, 230) -- Lighter frosty blue
+    tglTL.BorderSizePixel = 0
+    tglTL.Size = UDim2.new(0.75, 0, 1, 0)
+    tglTL.Font = Enum.Font.SourceSans
+    tglTL.Text = "Toggle frosty"
+    tglTL.TextColor3 = Color3.new(0, 0, 0) -- Black text
+    tglTL.TextScaled = true
+    tglTL.Parent = tglFrame
+
+    local cnxName = tostring(#cnx+1)
+    tglTrigger.BackgroundColor3 = Color3.fromRGB(255, 255, 255) -- White
+    tglTrigger.BorderSizePixel = 0
+    tglTrigger.AutoButtonColor = false
+    tglTrigger.Position = UDim2.new(0.75, 0, 0, 0)
+    tglTrigger.Size = UDim2.new(0.25, 0, 1, 0)
+    tglTrigger.Font = Enum.Font.SourceSans
+    tglTrigger.Text = keybind.Name
+    tglTrigger.TextColor3 = Color3.new(0, 0, 0) -- Black text
+    tglTrigger.TextScaled = true
+    tglTrigger.MouseButton1Down:Connect(function()
+        if cnx[cnxName] then
+            return
+        else
+            tglTrigger.Text = "..."
+            cnx[cnxName] = UIS.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.Keyboard then
+                    cnx[cnxName]:Disconnect()
+                    cnx[cnxName] = nil
+                    tglTrigger.Text = input.KeyCode.Name
+                    task.wait()
+                    keybind = input.KeyCode
+                elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+                    cnx[cnxName]:Disconnect()
+                    cnx[cnxName] = nil
+                    tglTrigger.Text = keybind.Name
+                end
+            end)
+        end
+    end)
+    tglTrigger.Parent = tglFrame
+
+    destroy.BackgroundColor3 = Color3.fromRGB(173, 216, 230) -- Lighter frosty blue
+    destroy.AutoButtonColor = false
+    destroy.BorderSizePixel = 0
+    destroy.Size = UDim2.new(1, 0, 0.2, 0)
+    destroy.Font = Enum.Font.SourceSans
+    destroy.Text = "Destroy frosty"
+    destroy.TextColor3 = Color3.new(0, 0, 0) -- Black text
+    destroy.TextScaled = true
+    destroy.MouseButton1Down:Connect(function()
+        if destroy.Text ~= "Are you sure?" then
+            destroy.Text = "Are you sure?"
+            destroy.BackgroundColor3 = BrickColor.new("Bright red").Color
+            task.delay(2, function()
+                destroy.Text = "Destroy frosty"
+                destroy.BackgroundColor3 = Color3.fromRGB(173, 216, 230) -- Lighter frosty blue
+            end)
+        else
+            for _, v in cnx do
+                v:Disconnect()
+                v = nil
+            end
+            cnx = nil
+            notified = nil
+            UI = nil
+            screenGui:Destroy()
+        end
+    end)
+    destroy.Parent = settingsFrame
+
+    settingsButton.Size = UDim2.new(0.05, 0, 1, 0)
+    settingsButton.AutoButtonColor = false
+    settingsButton.BorderSizePixel = 0
+    settingsButton.Position = UDim2.new(0.95, 0, 0, 0)
+    settingsButton.Image = "rbxasset://textures/ui/Settings/MenuBarIcons/GameSettingsTab@2x.png"
+    settingsButton.ScaleType = Enum.ScaleType.Fit
+    settingsButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    settingsButton.MouseButton1Down:Connect(function()
+        settingsFrame.Visible = not settingsFrame.Visible
+        elemFrame.Visible = not elemFrame.Visible
+        title.Text = settingsFrame.Visible and "Settings" or c.Title
+    end)
+    settingsButton.Parent = title
+
+    elemFrame.BackgroundTransparency = 1
+    elemFrame.BorderSizePixel = 0
+    elemFrame.Name = "Elements"
+    elemFrame.Position = UDim2.new(0.2, 0, 0.1, 0)
+    elemFrame.Size = UDim2.new(0.8, 0, 0.9, 0)
+    elemFrame.Parent = frame
+
+    uipl.Animated = false
+    uipl.ScrollWheelInputEnabled = false
+    uipl.Parent = elemFrame
+
+    tabSF.Active = false
+    tabSF.BackgroundColor3 = Color3.fromRGB(173, 216, 230) -- Lighter frosty blue
+    tabSF.BorderSizePixel = 0
+    tabSF.Name = "TabSF"
+    tabSF.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    tabSF.CanvasSize = UDim2.new(0, 0, 0.1, 0)
+    tabSF.ElasticBehavior = Enum.ElasticBehavior.Never
+    tabSF.ScrollBarThickness = 0
+    tabSF.ScrollingDirection = Enum.ScrollingDirection.Y
+    tabSF.Position = UDim2.new(0, 0, 0.1, 0)
+    tabSF.Size = UDim2.new(0.2, 0, 0.9, 0)
+    tabSF.Parent = frame
+
+    uill.SortOrder = Enum.SortOrder.LayoutOrder
+    uill.Parent = tabSF
+
+    cnx[#cnx+1] = UIS.InputBegan:Connect(function(input)
+        if input.KeyCode == keybind then
+            frame.Visible = not frame.Visible
+            if not notified then
+                game:GetService("StarterGui"):SetCore("SendNotification", {
+                    Title = "frosty is Hidden",
+                    Text = "Use " .. keybind.Name .. " to toggle",
+                    Duration = 4
+                })
+                notified = true
+            end
+        end
+    end)
+
+    local dragStartMousePosition = nil
+    local startFramePosition = nil
+    local isDragging = false
+
+    cnx[#cnx+1] = title.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            isDragging = true
+            dragStartMousePosition = input.Position
+            startFramePosition = frame.Position
+        end
+    end)
+
+    cnx[#cnx+1] = UIS.InputChanged:Connect(function(input)
+        if isDragging then
+            local delta = input.Position - dragStartMousePosition
+            frame.Position = UDim2.new(
+                startFramePosition.X.Scale, startFramePosition.X.Offset + delta.X,
+                startFramePosition.Y.Scale, startFramePosition.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    cnx[#cnx+1] = UIS.InputEnded:Connect(function(input)
+        if isDragging then
+            isDragging = false
+            dragStartMousePosition = nil
+            startFramePosition = nil
+        end
+    end)
 end
 
--- Function to create a TextLabel
-function SoulUI:createTextLabel(parent, name, text, position, size, textColor)
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Name = name or "TextLabel"
-    textLabel.Text = text or "Default Text"
-    textLabel.Position = position or UDim2.new(0.5, 0, 0.5, 0)
-    textLabel.Size = size or UDim2.new(0.2, 0, 0.1, 0)
-    textLabel.TextColor3 = textColor or Color3.fromRGB(0, 0, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Parent = parent
-    return textLabel
+function UI:CreateTab(c)
+    local tabButton = Instance.new("TextButton")
+    local sf = Instance.new("ScrollingFrame")
+    local uill = Instance.new("UIListLayout")
+
+    if #screenGui.Frame.TabSF:GetChildren() == 1 then 
+        tabButton.BackgroundColor3 = BrickColor.new("Bright blue").Color
+    else
+        tabButton.BackgroundColor3 = Color3.fromRGB(173, 216, 230) -- Lighter frosty blue
+    end
+
+    tabButton.Name = c.Name
+    tabButton.Text = c.Name
+    tabButton.BorderSizePixel = 0
+    tabButton.AutoButtonColor = false
+    tabButton.Size = UDim2.new(1, 0, 0.2, 0)
+    tabButton.Font = Enum.Font.SourceSans
+    tabButton.TextColor3 = Color3.new(0, 0, 0) -- Black text
+    tabButton.TextScaled = true
+    tabButton.MouseButton1Down:Connect(function()
+        local page = screenGui.Frame.Elements:FindFirstChild(tabButton.Name)
+        screenGui.Frame.Elements.UIPageLayout:JumpTo(page)
+        page.CanvasPosition = Vector2.new(0, 0)
+
+        for _, v in pairs(screenGui.Frame.TabSF:GetChildren()) do
+            if v:IsA("TextButton") and v.Name ~= tabButton.Name then
+                v.BackgroundColor3 = Color3.fromRGB(173, 216, 230) -- Lighter frosty blue
+            else
+                tabButton.BackgroundColor3 = BrickColor.new("Bright blue").Color
+            end
+        end
+    end)
+    tabButton.Parent = screenGui.Frame.TabSF
+
+    sf.Name = c.Name
+    sf.BackgroundTransparency = 1
+    sf.BorderSizePixel = 0
+    sf.Active = false
+    sf.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    sf.Size = UDim2.new(1, 0, 1, 0)
+    sf.CanvasSize = UDim2.new(0, 0, 1, 0)
+    sf.ScrollBarThickness = 0
+    sf.ElasticBehavior = Enum.ElasticBehavior.Never
+    sf.ScrollingDirection = Enum.ScrollingDirection.Y
+    sf.Parent = screenGui.Frame.Elements
+
+    uill.SortOrder = Enum.SortOrder.LayoutOrder
+    uill.Parent = sf
+
+    return sf
 end
 
--- Function to create a Button
-function SoulUI:createButton(parent, name, text, position, size, bgColor, textColor)
+function UI:CreateButton(c)
     local button = Instance.new("TextButton")
-    button.Name = name or "Button"
-    button.Text = text or "Click Me"
-    button.Position = position or UDim2.new(0.5, 0, 0.5, 0)
-    button.Size = size or UDim2.new(0.2, 0, 0.1, 0)
-    button.BackgroundColor3 = bgColor or Color3.fromRGB(0, 0, 255)
-    button.TextColor3 = textColor or Color3.fromRGB(255, 255, 255)
-    button.Parent = parent
+
+    button.Text = c.Text
+    button.Name = c.Text
+    button.BackgroundColor3 = Color3.fromRGB(173, 216, 230) -- Lighter frosty blue
+    button.AutoButtonColor = false
+    button.BorderSizePixel = 0
+    button.Size = UDim2.new(1, 0, 0.2, 0)
+    button.Font = Enum.Font.SourceSans
+    button.TextColor3 = Color3.new(0, 0, 0) -- Black text
+    button.TextScaled = true
+    button.MouseButton1Down:Connect(c.Callback)
+    button.Parent = c.Tab
     return button
 end
 
--- Function to create a Toggle
-function SoulUI:createToggle(parent, name, text, position, size, bgColor, textColor, callback)
-    local toggle = Instance.new("TextButton")
-    toggle.Name = name or "Toggle"
-    toggle.Text = text or "Toggle"
-    toggle.Position = position or UDim2.new(0.5, 0, 0.5, 0)
-    toggle.Size = size or UDim2.new(0.2, 0, 0.1, 0)
-    toggle.BackgroundColor3 = bgColor or Color3.fromRGB(0, 0, 255)
-    toggle.TextColor3 = textColor or Color3.fromRGB(255, 255, 255)
-    toggle.Parent = parent
-    
-    local state = false
-    
-    toggle.MouseButton1Click:Connect(function()
-        state = not state
-        toggle.BackgroundColor3 = state and Color3.fromRGB(0, 255, 0) or bgColor
-        if callback then callback(state) end
+function UI:CreateToggle(c)
+    local button = Instance.new("TextButton")
+    local boolean = true
+
+    button.Text = c.Text
+    button.Name = c.Text
+    button.AutoButtonColor = false
+    button.BackgroundColor3 = Color3.fromRGB(173, 216, 230) -- Lighter frosty blue
+    button.BorderSizePixel = 0
+    button.Size = UDim2.new(1, 0, 0.2, 0)
+    button.Font = Enum.Font.SourceSans
+    button.TextColor3 = Color3.new(0, 0, 0) -- Black text
+    button.TextScaled = true
+    button.MouseButton1Down:Connect(function()
+        c.Callback(boolean)
+        boolean = not boolean
     end)
-    
-    return toggle
+    button.Parent = c.Tab
+    return button
 end
 
--- Function to create a Slider
-function SoulUI:createSlider(parent, name, text, position, size, bgColor, min, max, callback)
-    local slider = Instance.new("Frame")
-    slider.Name = name or "Slider"
-    slider.Position = position or UDim2.new(0.5, 0, 0.5, 0)
-    slider.Size = size or UDim2.new(0.4, 0, 0.1, 0)
-    slider.BackgroundColor3 = bgColor or Color3.fromRGB(255, 255, 255)
-    slider.Parent = parent
-    
-    local label = Instance.new("TextLabel")
-    label.Name = "Label"
-    label.Text = text or "Slider"
-    label.Size = UDim2.new(1, 0, 0.5, 0)
-    label.TextColor3 = Color3.fromRGB(0, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Parent = slider
-    
-    local knob = Instance.new("Frame")
-    knob.Name = "Knob"
-    knob.Size = UDim2.new(0.1, 0, 1, 0)
-    knob.Position = UDim2.new(0, 0, 0, 0)
-    knob.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
-    knob.Parent = slider
-    
-    local dragging = false
-    knob.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-        end
-    end)
-    
-    knob.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    
-    slider.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local relativePos = (input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X
-            knob.Position = UDim2.new(math.clamp(relativePos, 0, 1), 0, 0, 0)
-            if callback then callback(math.clamp(relativePos * (max - min) + min, min, max)) end
-        end
-    end)
-    
-    return slider
+function UI:Notify(c)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = c.Title or "",
+        Text = c.Text or "",
+        Duration = c.Duration or 5,
+        Icon = c.Icon or nil
+    })
 end
 
--- Function to create a Dropdown
-function SoulUI:createDropdown(parent, name, text, position, size, bgColor, options, callback)
-    local dropdown = Instance.new("Frame")
-    dropdown.Name = name or "Dropdown"
-    dropdown.Position = position or UDim2.new(0.5, 0, 0.5, 0)
-    dropdown.Size = size or UDim2.new(0.3, 0, 0.2, 0)
-    dropdown.BackgroundColor3 = bgColor or Color3.fromRGB(255, 255, 255)
-    dropdown.Parent = parent
-    
-    local label = Instance.new("TextLabel")
-    label.Name = "Label"
-    label.Text = text or "Dropdown"
-    label.Size = UDim2.new(1, 0, 0.3, 0)
-    label.TextColor3 = Color3.fromRGB(0, 0, 0)
-    label.BackgroundTransparency = 1
-    label.Parent = dropdown
-    
-    local selection = Instance.new("TextButton")
-    selection.Name = "Selection"
-    selection.Text = options[1] or "Select"
-    selection.Size = UDim2.new(1, 0, 0.7, 0)
-    selection.Position = UDim2.new(0, 0, 0.3, 0)
-    selection.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-    selection.Parent = dropdown
-    
-    local menu = Instance.new("Frame")
-    menu.Name = "Menu"
-    menu.Size = UDim2.new(1, 0, #options * 0.7, 0)
-    menu.Position = UDim2.new(0, 0, 1, 0)
-    menu.Visible = false
-    menu.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    menu.Parent = dropdown
-    
-    selection.MouseButton1Click:Connect(function()
-        menu.Visible = not menu.Visible
+function UI:CreateTextBox(c)
+    local frame = Instance.new("Frame")
+    local textLabel = Instance.new("TextLabel")
+    local textBox = Instance.new("TextBox")
+
+    frame.Name = c.Text
+    frame.BackgroundTransparency = 1
+    frame.BorderSizePixel = 0
+    frame.Size = UDim2.new(1, 0, 0.2, 0)
+    frame.Parent = c.Tab
+
+    textBox.PlaceholderText = c.PlaceholderText
+    textBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255) -- White
+    textBox.BorderSizePixel = 0
+    textBox.Position = UDim2.new(0.75, 0, 0, 0)
+    textBox.Size = UDim2.new(0.25, 0, 1, 0)
+    textBox.Font = Enum.Font.SourceSans
+    textBox.Text = ""
+    textBox.TextColor3 = Color3.new(0, 0, 0) -- Black text
+    textBox.TextScaled = true
+    textBox.Parent = frame
+
+    textLabel.Text = c.Text
+    textLabel.BackgroundColor3 = Color3.fromRGB(173, 216, 230) -- Lighter frosty blue
+    textLabel.BorderSizePixel = 0
+    textLabel.Size = UDim2.new(0.75, 0, 1, 0)
+    textLabel.Font = Enum.Font.SourceSans
+    textLabel.TextColor3 = Color3.new(0, 0, 0) -- Black text
+    textLabel.TextScaled = true
+    textLabel.Parent = frame
+
+    textBox.FocusLost:Connect(function()
+        if textBox.Text == "" then
+            if c.Default then
+                textBox.Text = c.Default
+                c.Callback(textBox.Text)
+            else
+                return
+            end
+        else
+            c.Callback(textBox.Text)
+        end
     end)
-    
-    for i, option in ipairs(options) do
-        local button = Instance.new("TextButton")
-        button.Name = "Option" .. i
-        button.Text = option
-        button.Size = UDim2.new(1, 0, 1 / #options, 0)
-        button.Position = UDim2.new(0, 0, (i - 1) / #options, 0)
-        button.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-        button.Parent = menu
-        
-        button.MouseButton1Click:Connect(function()
-            selection.Text = option
-            menu.Visible = false
-            if callback then callback(option) end
-        end)
-    end
-    
-    return dropdown
+    return textLabel
 end
 
-return SoulUI
+function UI:CreateKeybind(c)
+    local frame = Instance.new("Frame")
+    local textLabel = Instance.new("TextLabel")
+    local trigger = Instance.new("TextButton")
+    local cnxName = tostring(#cnx+1)
+    local keybind = c.DefaultKeybind
+    local boolean = true
+
+    frame.Name = c.Text
+    frame.BackgroundTransparency = 1
+    frame.BorderSizePixel = 0
+    frame.Size = UDim2.new(1, 0, 0.2, 0)
+    frame.Parent = c.Tab
+
+    trigger.Text = c.DefaultKeybind.Name
+    trigger.BackgroundColor3 = Color3.fromRGB(255, 255, 255) -- White
+    trigger.BorderSizePixel = 0
+    trigger.Position = UDim2.new(0.75, 0, 0, 0)
+    trigger.AutoButtonColor = false
+    trigger.Size = UDim2.new(0.25, 0, 1, 0)
+    trigger.Font = Enum.Font.SourceSans
+    trigger.TextColor3 = Color3.new(0, 0, 0) -- Black text
+    trigger.TextScaled = true
+    trigger.Parent = frame
+
+    textLabel.Name = c.Text
+    textLabel.Text = c.Text
+    textLabel.BackgroundColor3 = Color3.fromRGB(173, 216, 230) -- Lighter frosty blue
+    textLabel.BorderSizePixel = 0
+    textLabel.Size = UDim2.new(0.75, 0, 1, 0)
+    textLabel.Font = Enum.Font.SourceSans
+    textLabel.TextColor3 = Color3.new(0, 0, 0) -- Black text
+    textLabel.TextScaled = true
+    textLabel.Parent = frame
+
+    cnx[#cnx+1] = UIS.InputBegan:Connect(function(input)
+        if input.KeyCode == keybind then
+            if c.Toggle then
+                c.Callback(boolean)
+                boolean = not boolean
+            else
+                c.Callback()
+            end
+        end
+    end)
+
+    trigger.MouseButton1Down:Connect(function()
+        if cnx[cnxName] then
+            return
+        else
+            trigger.Text = "..."
+            cnx[cnxName] = UIS.InputBegan:Connect(function(input)
+                if input.User
