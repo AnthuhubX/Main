@@ -7,7 +7,7 @@ local player = Players.LocalPlayer
 -- List of valid keys
 local validKeys = {
     ["111"] = "https://raw.githubusercontent.com/nocturnal631/Main/refs/heads/main/Control%20ball%20script",
-    ["Novaisbest"] = "https://raw.githubusercontent.com/nocturnal631/Main/refs/heads/main/Control%20ball%20script"
+    ["Soulshub"] = "https://raw.githubusercontent.com/nocturnal631/Main/refs/heads/main/Control%20ball%20script"
 }
 
 -- Create ScreenGui
