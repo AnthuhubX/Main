@@ -7,7 +7,7 @@ local player = Players.LocalPlayer
 -- List of valid keys
 local validKeys = {
     ["111"] = "https://raw.githubusercontent.com/AnthuhubX/Main/refs/heads/main/Soul%20hub",
-    ["Novaisbest"] = "https://raw.githubusercontent.com/AnthuhubX/Main/refs/heads/main/Soul%20hub"
+    ["Soulshub"] = "https://raw.githubusercontent.com/AnthuhubX/Main/refs/heads/main/Soul%20hub"
 }
 
 -- Create ScreenGui
