@@ -1,0 +1,227 @@
+-- Final Working Football Abilities Script
+local player = game.Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Debris = game:GetService("Debris")
+
+-- Load VFX assets
+local kaiserVFX = ReplicatedStorage.Effects.PowerShot.Dragon.Attachment
+local godspeedVFXAsset = game:GetObjects("rbxassetid://88332428379423")[1]
+
+if godspeedVFXAsset and godspeedVFXAsset:IsA("Model") then
+    godspeedVFXAsset.PrimaryPart = godspeedVFXAsset:FindFirstChildWhichIsA("BasePart")
+end
+
+-- Function to find the football
+local function findBall()
+    for _, obj in ipairs(workspace:GetChildren()) do
+        if obj.Name == "Football" then
+            return obj
+        end
+    end
+    return nil
+end
+
+-- Function to display ability text
+local function displayAbilityText(text, duration)
+    local gui = player.PlayerGui:FindFirstChild("InGameUI")
+    if gui then
+        local abilityText = gui:FindFirstChild("AbilityText")
+        if abilityText then
+            abilityText.Text = text
+            abilityText.Visible = true
+            task.delay(duration, function()
+                abilityText.Visible = false
+            end)
+        end
+    end
+end
+
+-- Button creation function
+local function createAbilityButton(buttonName, keybindText, displayText, abilityFunction)
+    local bottomAbilities = player.PlayerGui.InGameUI.Bottom.Abilities
+    local templateButton = bottomAbilities["1"]:Clone()
+    
+    templateButton.Name = buttonName
+    templateButton.Parent = bottomAbilities
+    templateButton.Keybind.Text = keybindText
+    templateButton.Timer.Text = displayText
+    templateButton.ActualTimer.Text = ""
+    
+    if templateButton:FindFirstChild("Cooldown") then
+        templateButton.Cooldown:Destroy()
+    end
+    
+    templateButton.Activated:Connect(abilityFunction)
+    return templateButton
+end
+
+-- Kaiser Impact Ability (200 power shot)
+local function performKaiserImpact()
+    local character = player.Character
+    if not character then return end
+
+    local humanoid = character:FindFirstChild("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoid or not rootPart then return end
+
+    -- Animation
+    local anim = Instance.new("Animation")
+    anim.AnimationId = "rbxassetid://18723315763"
+    humanoid:LoadAnimation(anim):Play()
+
+    -- VFX
+    local vfx = kaiserVFX:Clone()
+    vfx.Parent = rootPart
+    for _, emitter in ipairs(vfx:GetDescendants()) do
+        if emitter:IsA("ParticleEmitter") then
+            emitter.Enabled = true
+        end
+    end
+    Debris:AddItem(vfx, 1.5)
+
+    -- Sound
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://14988114469"
+    sound.Volume = 2
+    sound.Parent = rootPart
+    sound:Play()
+    Debris:AddItem(sound, sound.TimeLength)
+
+    wait(0.5) -- Animation timing
+
+    -- Shoot with 200 power
+    ReplicatedStorage.Packages.Knit.Services.BallService.RE.Shoot:FireServer(200)
+end
+
+-- Dribbler Ability (Zigzag movement)
+local function performDribbler()
+    local character = player.Character
+    if not character then return end
+
+    local humanoid = character:FindFirstChild("Humanoid")
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoid or not rootPart then return end
+
+    -- Animation
+    local anim = Instance.new("Animation")
+    anim.AnimationId = "rbxassetid://99916870664377"
+    local animTrack = humanoid:LoadAnimation(anim)
+    animTrack:Play()
+    animTrack:AdjustSpeed(1.5)
+
+    -- Zigzag movement
+    local segments = 10
+    local duration = 0.08
+    local distance = 7
+
+    local function zigzag(count)
+        if count > segments then
+            animTrack:Stop()
+            return
+        end
+
+        -- Movement calculation
+        local dir = (count % 2 == 1) and 1 or -1
+        local fwd = rootPart.CFrame.LookVector
+        local right = rootPart.CFrame.RightVector
+        local targetPos = rootPart.Position + (fwd * distance + dir * right * distance)
+
+        -- VFX
+        if godspeedVFXAsset and count % 2 == 1 then
+            local vfx = godspeedVFXAsset:Clone()
+            vfx:PivotTo(rootPart.CFrame)
+            vfx.Parent = workspace
+            Debris:AddItem(vfx, duration*2)
+        end
+
+        -- Movement tween
+        local tween = TweenService:Create(
+            rootPart,
+            TweenInfo.new(duration, Enum.EasingStyle.Linear),
+            {CFrame = CFrame.new(targetPos, targetPos + fwd)}
+        )
+        tween:Play()
+
+        -- Sound
+        local sound = Instance.new("Sound")
+        sound.SoundId = "rbxassetid://4909206080"
+        sound.Volume = 5
+        sound.Parent = rootPart
+        sound:Play()
+        Debris:AddItem(sound, sound.TimeLength)
+
+        -- Continue sequence
+        tween.Completed:Connect(function()
+            zigzag(count + 1)
+        end)
+    end
+
+    zigzag(1) -- Start zigzag
+end
+
+-- Jump Flick Ability (Now dashes forward instead of toward ball)
+local function performJumpFlick()
+    local character = player.Character
+    if not character then return end
+
+    local humanoid = character:FindFirstChild("Humanoid")
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoid or not humanoidRootPart then return end
+
+    -- Get forward direction from character's current facing
+    local dashDir = humanoidRootPart.CFrame.LookVector
+
+    -- Animation (optional - add your animation here if needed)
+    -- local anim = Instance.new("Animation")
+    -- anim.AnimationId = "rbxassetid://YOUR_ANIMATION_ID"
+    -- humanoid:LoadAnimation(anim):Play()
+
+    humanoid.Jump = true
+    local landed = false
+    local connection = humanoid.StateChanged:Connect(function(_, newState)
+        if newState == Enum.HumanoidStateType.Landed or newState == Enum.HumanoidStateType.Running then
+            landed = true
+        end
+    end)
+    
+    -- Wait until landed
+    while not landed do task.wait(0.1) end
+    connection:Disconnect()
+
+    -- Perform forward dash
+    local bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.Velocity = dashDir * 65  -- Dash forward at speed 62
+    bodyVelocity.MaxForce = Vector3.new(1000000, 0, 1000000)
+    bodyVelocity.Parent = humanoidRootPart
+    Debris:AddItem(bodyVelocity, 0.5)
+
+    -- Visual feedback
+    displayAbilityText("Jump flick", 2)
+
+    -- Optional: Add VFX here if you want
+    -- local vfx = Instance.new("Part") -- or your custom VFX
+    -- vfx.Parent = workspace
+    -- Debris:AddItem(vfx, 1)
+end
+
+-- Create all ability buttons
+createAbilityButton("KaiserImpactButton", "K", "Impact", performKaiserImpact)
+createAbilityButton("DribblerButton", "V", "Dribbler", performDribbler)
+createAbilityButton("JumpFlickButton", "F", "Jump flick", performJumpFlick)
+
+-- Keyboard controls (K, V, and F keys)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == Enum.KeyCode.K then
+            performKaiserImpact()
+        elseif input.KeyCode == Enum.KeyCode.V then
+            performDribbler()
+        elseif input.KeyCode == Enum.KeyCode.F then
+            performJumpFlick()
+        end
+    end
+end)
