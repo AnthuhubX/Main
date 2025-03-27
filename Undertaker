@@ -216,11 +216,11 @@ createAbilityButton("JumpFlickButton", "F", "Jump flick", performJumpFlick)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.UserInputType == Enum.UserInputType.Keyboard then
-        if input.KeyCode == Enum.KeyCode.K then
+        if input.KeyCode == Enum.KeyCode.1 then
             performKaiserImpact()
-        elseif input.KeyCode == Enum.KeyCode.V then
+        elseif input.KeyCode == Enum.KeyCode.2 then
             performDribbler()
-        elseif input.KeyCode == Enum.KeyCode.F then
+        elseif input.KeyCode == Enum.KeyCode.3 then
             performJumpFlick()
         end
     end
