@@ -17,6 +17,11 @@
     - Notifications system
 ]]
 
+-- Wait for game to load
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
 local CustomLib = {}
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -100,6 +105,10 @@ MinimizeButtonGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 -- Handle protection for exploits
 if syn then
     syn.protect_gui(MinimizeButtonGui)
+elseif protect_gui then
+    protect_gui(MinimizeButtonGui)
+elseif gethui then
+    MinimizeButtonGui.Parent = gethui()
 end
 
 -- Determine parent based on environment
@@ -318,8 +327,13 @@ function CustomLib:CreateWindow(options)
     else
         if syn then
             syn.protect_gui(CustomLibGUI)
+        elseif protect_gui then
+            protect_gui(CustomLibGUI)
+        elseif gethui then
+            CustomLibGUI.Parent = gethui()
+        else
+            CustomLibGUI.Parent = CoreGui
         end
-        CustomLibGUI.Parent = CoreGui
     end
     
     -- Create main frame with centered position
