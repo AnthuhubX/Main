@@ -72,7 +72,7 @@ UIStroke.Thickness = 2
 UIStroke.Parent = MinimizeButton
 
 -- Make minimize button draggable
-local dragging = false
+local dragging = true
 local dragStart = nil
 local startPos = nil
 
