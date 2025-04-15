@@ -22,7 +22,7 @@ local Player = Players.LocalPlayer
 local Mouse = Player:GetMouse()
 
 -- Constants
-local TWEEN_INFO = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingStyle.Out)
+local TWEEN_INFO = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 -- Theme
 local Theme = {
