@@ -1,5 +1,5 @@
 --[[
-    Enhanced CustomLib - A Roblox UI Library
+    CustomLib - A Roblox UI Library
     Inspired by Rayfield Hub and Orion Library
     
     Features:
@@ -293,11 +293,11 @@ function CustomLib:CreateWindow(options)
         CustomLibGUI.Parent = CoreGui
     end
     
-    -- Create main frame
+    -- Create main frame with centered position
     local MainFrame = Utility:Create("Frame", {
         Name = "MainFrame",
         Size = UDim2.new(0, 600, 0, 400),
-        Position = UDim2.new(0.5, -300, 0.5, -200),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
         BackgroundColor3 = Config.Theme.Background,
         BorderSizePixel = 0,
         AnchorPoint = Vector2.new(0.5, 0.5),
@@ -311,6 +311,9 @@ function CustomLib:CreateWindow(options)
             Thickness = 1
         })
     })
+    
+    -- Set initial position for animation (off-screen)
+    MainFrame.Position = UDim2.new(0.5, 0, -1, 0)
     
     -- Create top bar
     local TopBar = Utility:Create("Frame", {
@@ -414,12 +417,9 @@ function CustomLib:CreateWindow(options)
     TabContentContainer.Parent = MainFrame
     MainFrame.Parent = CustomLibGUI
     
-    -- Set initial position for animation (off-screen)
-    MainFrame.Position = UDim2.new(0.5, 0, -1, 0)
-    
     -- Animate the UI appearing
     local tweenInfo = TweenInfo.new(0.8, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out)
-    local tween = TweenService:Create(MainFrame, tweenInfo, {Position = UDim2.new(0.5, -300, 0.5, -200)})
+    local tween = TweenService:Create(MainFrame, tweenInfo, {Position = UDim2.new(0.5, 0, 0.5, 0)})
     tween:Play()
     
     -- Make window draggable for both mouse and touch
@@ -489,7 +489,7 @@ function CustomLib:CreateWindow(options)
             MainFrame.Visible = true
             
             -- Animate the UI appearing again
-            local tweenIn = TweenService:Create(MainFrame, tweenInfo, {Position = UDim2.new(0.5, -300, 0.5, -200)})
+            local tweenIn = TweenService:Create(MainFrame, tweenInfo, {Position = UDim2.new(0.5, 0, 0.5, 0)})
             tweenIn:Play()
             
             MinimizeButton.Visible = false
