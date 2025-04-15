@@ -30,6 +30,67 @@ local Player = Players.LocalPlayer
 local Mouse = Player:GetMouse()
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
+-- Create a function to make any UI element draggable (works on both PC and mobile)
+local function MakeFrameDraggable(frame, dragPart)
+    local dragToggle = nil
+    local dragInput = nil
+    local dragStart = nil
+    local dragPos = nil
+    local startPos = nil
+    
+    local function updateInput(input)
+        local delta = input.Position - dragStart
+        local newPosition = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        
+        -- Smooth movement with tweening
+        local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        TweenService:Create(frame, tweenInfo, {Position = newPosition}):Play()
+    end
+    
+    dragPart.InputBegan:Connect(function(input)
+        if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+            dragToggle = true
+            dragStart = input.Position
+            startPos = frame.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragToggle = false
+                end
+            end)
+        end
+    end)
+    
+    dragPart.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragToggle then
+            updateInput(input)
+        end
+    end)
+    
+    -- Special handling for touch input
+    if isMobile then
+        dragPart.TouchPan:Connect(function(touchPositions, totalTranslation, velocity, state)
+            if state == Enum.UserInputState.Change then
+                local newPosition = UDim2.new(
+                    startPos.X.Scale, 
+                    startPos.X.Offset + totalTranslation.X,
+                    startPos.Y.Scale, 
+                    startPos.Y.Offset + totalTranslation.Y
+                )
+                frame.Position = newPosition
+            elseif state == Enum.UserInputState.Begin then
+                startPos = frame.Position
+            end
+        end)
+    end
+end
+
 -- Create a ScreenGui for the minimize button
 local MinimizeButtonGui = Instance.new("ScreenGui")
 MinimizeButtonGui.Name = "CustomLibMinimizeButton"
@@ -72,39 +133,7 @@ UIStroke.Thickness = 2
 UIStroke.Parent = MinimizeButton
 
 -- Make minimize button draggable
-local dragging = true
-local dragStart = nil
-local startPos = nil
-
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    MinimizeButton.Position = UDim2.new(
-        startPos.X.Scale,
-        startPos.X.Offset + delta.X,
-        startPos.Y.Scale,
-        startPos.Y.Offset + delta.Y
-    )
-end
-
-MinimizeButton.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = MinimizeButton.Position
-    end
-end)
-
-MinimizeButton.InputChanged:Connect(function(input)
-    if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and dragging then
-        updateDrag(input)
-    end
-end)
-
-MinimizeButton.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-    end
-end)
+MakeFrameDraggable(MinimizeButton, MinimizeButton)
 
 -- Utility Functions
 local Utility = {}
@@ -300,7 +329,7 @@ function CustomLib:CreateWindow(options)
         Position = UDim2.new(0.5, 0, 0.5, 0),
         BackgroundColor3 = Config.Theme.Background,
         BorderSizePixel = 0,
-        AnchorPoint = Vector2.new(0.5, 0.5),
+        AnchorPoint = Vector2.new(0.5, 0.5), -- This ensures it's centered
         ClipsDescendants = true
     }, {
         Utility:Create("UICorner", {
@@ -313,7 +342,7 @@ function CustomLib:CreateWindow(options)
     })
     
     -- Set initial position for animation (off-screen)
-    MainFrame.Position = UDim2.new(0.5, 0, -1, 0)
+    MainFrame.Position = UDim2.new(0.5, 0, -0.5, 0)
     
     -- Create top bar
     local TopBar = Utility:Create("Frame", {
@@ -422,41 +451,13 @@ function CustomLib:CreateWindow(options)
     local tween = TweenService:Create(MainFrame, tweenInfo, {Position = UDim2.new(0.5, 0, 0.5, 0)})
     tween:Play()
     
-    -- Make window draggable for both mouse and touch
-    local Dragging = false
-    local DragStart = nil
-    local StartPos = nil
-    
-    TopBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = true
-            DragStart = input.Position
-            StartPos = MainFrame.Position
-        end
-    end)
-    
-    UserInputService.InputChanged:Connect(function(input)
-        if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and Dragging then
-            local Delta = input.Position - DragStart
-            MainFrame.Position = UDim2.new(
-                StartPos.X.Scale,
-                StartPos.X.Offset + Delta.X,
-                StartPos.Y.Scale,
-                StartPos.Y.Offset + Delta.Y
-            )
-        end
-    end)
-    
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            Dragging = false
-        end
-    end)
+    -- Make UI draggable for both PC and mobile
+    MakeFrameDraggable(MainFrame, TopBar)
     
     -- Close button functionality with animation
     CloseButton.MouseButton1Click:Connect(function()
         -- Animate the UI disappearing
-        local tweenOut = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(0.5, 0, -1, 0)})
+        local tweenOut = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(0.5, 0, -0.5, 0)})
         tweenOut:Play()
         
         tweenOut.Completed:Connect(function()
@@ -470,7 +471,7 @@ function CustomLib:CreateWindow(options)
     MinimizeButton.MouseButton1Click:Connect(function()
         if not Minimized then
             -- Animate the UI disappearing
-            local tweenOut = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(0.5, 0, -1, 0)})
+            local tweenOut = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(0.5, 0, -0.5, 0)})
             tweenOut:Play()
             
             tweenOut.Completed:Connect(function()
@@ -485,7 +486,7 @@ function CustomLib:CreateWindow(options)
     -- Add functionality to the minimize button to show the UI again
     MinimizeButton.MouseButton1Click:Connect(function()
         if Minimized then
-            MainFrame.Position = UDim2.new(0.5, 0, -1, 0)
+            MainFrame.Position = UDim2.new(0.5, 0, -0.5, 0)
             MainFrame.Visible = true
             
             -- Animate the UI appearing again
@@ -1041,6 +1042,19 @@ function CustomLib:CreateWindow(options)
                     end
                 end)
                 
+                -- Mobile-specific touch handling
+                if isMobile then
+                    SliderBackground.TouchPan:Connect(function(touchPositions, totalTranslation, velocity, state)
+                        if state == Enum.UserInputState.Change then
+                            -- Calculate value based on touch position
+                            local relativeX = math.clamp((touchPositions[1].X - SliderBackground.AbsolutePosition.X) / SliderBackground.AbsoluteSize.X, 0, 1)
+                            local value = minValue + (maxValue - minValue) * relativeX
+                            
+                            UpdateSlider(value)
+                        end
+                    end)
+                end
+                
                 -- Slider object
                 local SliderObj = {}
                 SliderObj.Frame = SliderFrame
@@ -1426,114 +1440,6 @@ function CustomLib:CreateWindow(options)
                 end
                 
                 return DropdownObj
-            end
-            
-            -- Create ColorPicker
-            function Section:CreateColorPicker(options)
-                options = options or {}
-                local name = options.Name or "Color Picker"
-                local defaultColor = options.Color or Color3.fromRGB(255, 255, 255)
-                local callback = options.Callback or function() end
-                
-                local ColorPickerFrame = Utility:Create("Frame", {
-                    Name = "ColorPicker",
-                    Size = UDim2.new(1, 0, 0, 36),
-                    BackgroundColor3 = Config.Theme.ElementBackground,
-                    BorderSizePixel = 0,
-                    ClipsDescendants = true
-                }, {
-                    Utility:Create("UICorner", {
-                        CornerRadius = UDim.new(0, 6)
-                    }),
-                    Utility:Create("UIStroke", {
-                        Color = Config.Theme.ElementBorder,
-                        Thickness = 1
-                    }),
-                    Utility:Create("TextLabel", {
-                        Name = "Title",
-                        Size = UDim2.new(1, -60, 1, 0),
-                        Position = UDim2.new(0, 10, 0, 0),
-                        BackgroundTransparency = 1,
-                        Text = name,
-                        TextColor3 = Config.Theme.LightText,
-                        TextSize = 14,
-                        Font = Enum.Font.GothamMedium,
-                        TextXAlignment = Enum.TextXAlignment.Left
-                    }),
-                    Utility:Create("Frame", {
-                        Name = "ColorDisplay",
-                        Size = UDim2.new(0, 30, 0, 20),
-                        Position = UDim2.new(1, -45, 0.5, -10),
-                        BackgroundColor3 = defaultColor,
-                        BorderSizePixel = 0
-                    }, {
-                        Utility:Create("UICorner", {
-                            CornerRadius = UDim.new(0, 4)
-                        }),
-                        Utility:Create("UIStroke", {
-                            Color = Config.Theme.ElementBorder,
-                            Thickness = 1
-                        })
-                    }),
-                    Utility:Create("Frame", {
-                        Name = "ColorPickerExpanded",
-                        Size = UDim2.new(1, -20, 0, 200),
-                        Position = UDim2.new(0, 10, 0, 45),
-                        BackgroundColor3 = Config.Theme.DropdownBackground,
-                        BorderSizePixel = 0,
-                        Visible = false
-                    }, {
-                        Utility:Create("UICorner", {
-                            CornerRadius = UDim.new(0, 6)
-                        }),
-                        Utility:Create("UIStroke", {
-                            Color = Config.Theme.ElementBorder,
-                            Thickness = 1
-                        }),
-                        -- Color picker components will be added here
-                    })
-                })
-                
-                ColorPickerFrame.Parent = Section.Container
-                
-                -- Color picker functionality
-                local ColorPicker = ColorPickerFrame
-                local ColorDisplay = ColorPicker.ColorDisplay
-                local ColorPickerExpanded = ColorPicker.ColorPickerExpanded
-                local IsOpen = false
-                local CurrentColor = defaultColor
-                
-                -- Toggle color picker
-                ColorPicker.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                        IsOpen = not IsOpen
-                        
-                        if IsOpen then
-                            ColorPickerExpanded.Visible = true
-                            Utility:Tween(ColorPickerFrame, {Size = UDim2.new(1, 0, 0, 250)}, 0.3)
-                        else
-                            Utility:Tween(ColorPickerFrame, {Size = UDim2.new(1, 0, 0, 36)}, 0.3)
-                            task.delay(0.3, function()
-                                ColorPickerExpanded.Visible = false
-                            end)
-                        end
-                    end
-                end)
-                
-                -- Color picker object
-                local ColorPickerObj = {}
-                ColorPickerObj.Frame = ColorPickerFrame
-                ColorPickerObj.Display = ColorDisplay
-                ColorPickerObj.Value = CurrentColor
-                
-                function ColorPickerObj:Set(color)
-                    CurrentColor = color
-                    ColorDisplay.BackgroundColor3 = color
-                    ColorPickerObj.Value = color
-                    callback(color)
-                end
-                
-                return ColorPickerObj
             end
             
             -- Create Input
