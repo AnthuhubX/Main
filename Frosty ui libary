@@ -1,9 +1,13 @@
 --[[
-    CustomLib - A Roblox UI Library
+    Enhanced CustomLib - A Roblox UI Library
     Inspired by Rayfield Hub and Orion Library
     
     Features:
-    - Sleek and modern interface
+    - Mobile support with touch input
+    - Draggable UI for both mobile and PC
+    - Centered spawn with smooth animation
+    - Close button with animation
+    - Minimize button that hides UI and shows a floating restore button
     - Multiple themes (Default, Light, Dark, Midnight)
     - Comprehensive UI components
     - Smooth animations
@@ -24,6 +28,83 @@ local TextService = game:GetService("TextService")
 
 local Player = Players.LocalPlayer
 local Mouse = Player:GetMouse()
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+-- Create a ScreenGui for the minimize button
+local MinimizeButtonGui = Instance.new("ScreenGui")
+MinimizeButtonGui.Name = "CustomLibMinimizeButton"
+MinimizeButtonGui.ResetOnSpawn = false
+MinimizeButtonGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Handle protection for exploits
+if syn then
+    syn.protect_gui(MinimizeButtonGui)
+end
+
+-- Determine parent based on environment
+if RunService:IsStudio() then
+    MinimizeButtonGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+else
+    MinimizeButtonGui.Parent = CoreGui
+end
+
+-- Create the minimize button (initially hidden)
+local MinimizeButton = Instance.new("ImageButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Size = UDim2.new(0, 40, 0, 40)
+MinimizeButton.Position = UDim2.new(0, 20, 0, 20)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MinimizeButton.BorderSizePixel = 0
+MinimizeButton.Image = "rbxassetid://10734950020"
+MinimizeButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeButton.Visible = false
+MinimizeButton.Parent = MinimizeButtonGui
+
+-- Add corner to make it round
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(1, 0)
+UICorner.Parent = MinimizeButton
+
+-- Add stroke for better visibility
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(60, 60, 60)
+UIStroke.Thickness = 2
+UIStroke.Parent = MinimizeButton
+
+-- Make minimize button draggable
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    MinimizeButton.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end
+
+MinimizeButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MinimizeButton.Position
+    end
+end)
+
+MinimizeButton.InputChanged:Connect(function(input)
+    if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and dragging then
+        updateDrag(input)
+    end
+end)
+
+MinimizeButton.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
 
 -- Utility Functions
 local Utility = {}
@@ -333,13 +414,21 @@ function CustomLib:CreateWindow(options)
     TabContentContainer.Parent = MainFrame
     MainFrame.Parent = CustomLibGUI
     
-    -- Make window draggable
+    -- Set initial position for animation (off-screen)
+    MainFrame.Position = UDim2.new(0.5, 0, -1, 0)
+    
+    -- Animate the UI appearing
+    local tweenInfo = TweenInfo.new(0.8, Enum.EasingStyle.Bounce, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(MainFrame, tweenInfo, {Position = UDim2.new(0.5, -300, 0.5, -200)})
+    tween:Play()
+    
+    -- Make window draggable for both mouse and touch
     local Dragging = false
     local DragStart = nil
     local StartPos = nil
     
     TopBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             Dragging = true
             DragStart = input.Position
             StartPos = MainFrame.Position
@@ -347,7 +436,7 @@ function CustomLib:CreateWindow(options)
     end)
     
     UserInputService.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement and Dragging then
+        if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and Dragging then
             local Delta = input.Position - DragStart
             MainFrame.Position = UDim2.new(
                 StartPos.X.Scale,
@@ -359,30 +448,52 @@ function CustomLib:CreateWindow(options)
     end)
     
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             Dragging = false
         end
     end)
     
-    -- Close button functionality
+    -- Close button functionality with animation
     CloseButton.MouseButton1Click:Connect(function()
-        CustomLibGUI:Destroy()
+        -- Animate the UI disappearing
+        local tweenOut = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(0.5, 0, -1, 0)})
+        tweenOut:Play()
+        
+        tweenOut.Completed:Connect(function()
+            CustomLibGUI:Destroy()
+            MinimizeButtonGui:Destroy()
+        end)
     end)
     
     -- Minimize button functionality
     local Minimized = false
     MinimizeButton.MouseButton1Click:Connect(function()
-        Minimized = not Minimized
+        if not Minimized then
+            -- Animate the UI disappearing
+            local tweenOut = TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(0.5, 0, -1, 0)})
+            tweenOut:Play()
+            
+            tweenOut.Completed:Connect(function()
+                MainFrame.Visible = false
+                MinimizeButton.Visible = true
+            end)
+            
+            Minimized = true
+        end
+    end)
+    
+    -- Add functionality to the minimize button to show the UI again
+    MinimizeButton.MouseButton1Click:Connect(function()
         if Minimized then
-            Utility:Tween(MainFrame, {Size = UDim2.new(0, 600, 0, 40)}, 0.3)
-            TabContainer.Visible = false
-            TabContentContainer.Visible = false
-            MinimizeButton.Image = "rbxassetid://10734950020"
-        else
-            Utility:Tween(MainFrame, {Size = UDim2.new(0, 600, 0, 400)}, 0.3)
-            TabContainer.Visible = true
-            TabContentContainer.Visible = true
-            MinimizeButton.Image = "rbxassetid://10734950020"
+            MainFrame.Position = UDim2.new(0.5, 0, -1, 0)
+            MainFrame.Visible = true
+            
+            -- Animate the UI appearing again
+            local tweenIn = TweenService:Create(MainFrame, tweenInfo, {Position = UDim2.new(0.5, -300, 0.5, -200)})
+            tweenIn:Play()
+            
+            MinimizeButton.Visible = false
+            Minimized = false
         end
     end)
     
@@ -390,6 +501,8 @@ function CustomLib:CreateWindow(options)
     local Window = {}
     Window.Tabs = {}
     Window.ActiveTab = nil
+    Window.GUI = CustomLibGUI
+    Window.MainFrame = MainFrame
     
     -- Create tab function
     function Window:CreateTab(name, icon)
@@ -456,7 +569,7 @@ function CustomLib:CreateWindow(options)
         
         -- Tab selection logic
         TabButton.InputBegan:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                 Window:SelectTab(TabId)
             end
         end)
@@ -670,6 +783,14 @@ function CustomLib:CreateWindow(options)
                     callback()
                 end)
                 
+                -- Touch support for mobile
+                Button.TouchTap:Connect(function()
+                    Utility:Tween(ButtonFrame, {BackgroundColor3 = Utility:DarkenColor(Config.Theme.ElementBackgroundHover, 0.05)}, 0.1)
+                    task.wait(0.1)
+                    Utility:Tween(ButtonFrame, {BackgroundColor3 = Config.Theme.ElementBackgroundHover}, 0.1)
+                    callback()
+                end)
+                
                 -- Button object
                 local ButtonObj = {}
                 ButtonObj.Frame = ButtonFrame
@@ -765,14 +886,14 @@ function CustomLib:CreateWindow(options)
                 
                 -- Toggle input
                 ToggleFrame.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                         IsToggled = not IsToggled
                         UpdateToggle()
                     end
                 end)
                 
                 ToggleBackground.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                         IsToggled = not IsToggled
                         UpdateToggle()
                     end
@@ -893,10 +1014,10 @@ function CustomLib:CreateWindow(options)
                 local isDragging = false
                 
                 SliderBackground.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                         isDragging = true
                         
-                        -- Calculate value based on mouse position
+                        -- Calculate value based on input position
                         local relativeX = math.clamp((input.Position.X - SliderBackground.AbsolutePosition.X) / SliderBackground.AbsoluteSize.X, 0, 1)
                         local value = minValue + (maxValue - minValue) * relativeX
                         
@@ -905,8 +1026,8 @@ function CustomLib:CreateWindow(options)
                 end)
                 
                 UserInputService.InputChanged:Connect(function(input)
-                    if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                        -- Calculate value based on mouse position
+                    if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                        -- Calculate value based on input position
                         local relativeX = math.clamp((input.Position.X - SliderBackground.AbsolutePosition.X) / SliderBackground.AbsoluteSize.X, 0, 1)
                         local value = minValue + (maxValue - minValue) * relativeX
                         
@@ -915,7 +1036,7 @@ function CustomLib:CreateWindow(options)
                 end)
                 
                 UserInputService.InputEnded:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                         isDragging = false
                     end
                 end)
@@ -1179,6 +1300,64 @@ function CustomLib:CreateWindow(options)
                             end
                         end)
                         
+                        -- Touch support for mobile
+                        OptionButton.TouchTap:Connect(function()
+                            if multiSelection then
+                                -- Check if option is already selected
+                                local isSelected = false
+                                local index = 0
+                                
+                                for i, selected in ipairs(currentOption) do
+                                    if selected == option then
+                                        isSelected = true
+                                        index = i
+                                        break
+                                    end
+                                end
+                                
+                                -- Toggle selection
+                                if isSelected then
+                                    table.remove(currentOption, index)
+                                    OptionButton.BackgroundColor3 = Config.Theme.ElementBackground
+                                else
+                                    table.insert(currentOption, option)
+                                    OptionButton.BackgroundColor3 = Config.Theme.ElementBackgroundHover
+                                end
+                                
+                                -- Update selected text
+                                Selected.Text = table.concat(currentOption, ", ")
+                                
+                                -- Callback
+                                callback(currentOption)
+                            else
+                                -- Update selection
+                                currentOption = option
+                                Selected.Text = option
+                                
+                                -- Update option button colors
+                                for _, child in pairs(OptionList:GetChildren()) do
+                                    if child:IsA("TextButton") then
+                                        if child.Text == option then
+                                            child.BackgroundColor3 = Config.Theme.ElementBackgroundHover
+                                        else
+                                            child.BackgroundColor3 = Config.Theme.ElementBackground
+                                        end
+                                    end
+                                end
+                                
+                                -- Close dropdown
+                                IsOpen = false
+                                Utility:Tween(DropdownFrame, {Size = UDim2.new(1, 0, 0, 36)}, 0.3)
+                                Utility:Tween(Arrow, {Rotation = 0}, 0.3)
+                                task.delay(0.3, function()
+                                    DropList.Visible = false
+                                end)
+                                
+                                -- Callback
+                                callback(option)
+                            end
+                        end)
+                        
                         OptionButton.Parent = OptionList
                     end
                 end
@@ -1188,7 +1367,7 @@ function CustomLib:CreateWindow(options)
                 
                 -- Toggle dropdown
                 Dropdown.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                         IsOpen = not IsOpen
                         
                         if IsOpen then
@@ -1326,7 +1505,7 @@ function CustomLib:CreateWindow(options)
                 
                 -- Toggle color picker
                 ColorPicker.InputBegan:Connect(function(input)
-                    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                         IsOpen = not IsOpen
                         
                         if IsOpen then
@@ -1433,6 +1612,13 @@ function CustomLib:CreateWindow(options)
                     end
                 end)
                 
+                -- Mobile keyboard support
+                if isMobile then
+                    InputField.Focused:Connect(function()
+                        InputField.PlaceholderText = "Tap to type..."
+                    end)
+                end
+                
                 -- Input object
                 local InputObj = {}
                 InputObj.Frame = InputFrame
@@ -1536,6 +1722,22 @@ function CustomLib:CreateWindow(options)
                     WaitingForInput = true
                     KeybindButton.Text = "..."
                     KeybindButton.BackgroundColor3 = Config.Theme.Accent
+                end)
+                
+                -- Touch support for mobile
+                KeybindButton.TouchTap:Connect(function()
+                    if isMobile then
+                        -- For mobile, show a list of common keys
+                        local mobileKeys = {"E", "Q", "R", "F", "C", "X", "Z", "T", "G"}
+                        local currentIndex = table.find(mobileKeys, CurrentKey) or 1
+                        currentIndex = (currentIndex % #mobileKeys) + 1
+                        UpdateKeybind(mobileKeys[currentIndex])
+                        callback()
+                    else
+                        WaitingForInput = true
+                        KeybindButton.Text = "..."
+                        KeybindButton.BackgroundColor3 = Config.Theme.Accent
+                    end
                 end)
                 
                 -- Keybind input
@@ -1729,6 +1931,18 @@ function CustomLib:Notify(options)
                 end)
             end)
             
+            -- Touch support for mobile
+            AcceptButton.TouchTap:Connect(function()
+                if actions.Accept.Callback then
+                    actions.Accept.Callback()
+                end
+                
+                Utility:Tween(NotificationFrame, {Position = UDim2.new(1, 320, 1, -120)}, 0.5)
+                task.delay(0.5, function()
+                    NotificationFrame:Destroy()
+                end)
+            end)
+            
             AcceptButton.Parent = ButtonsFrame
         end
         
@@ -1755,6 +1969,18 @@ function CustomLib:Notify(options)
             })
             
             DeclineButton.MouseButton1Click:Connect(function()
+                if actions.Decline.Callback then
+                    actions.Decline.Callback()
+                end
+                
+                Utility:Tween(NotificationFrame, {Position = UDim2.new(1, 320, 1, -120)}, 0.5)
+                task.delay(0.5, function()
+                    NotificationFrame:Destroy()
+                end)
+            end)
+            
+            -- Touch support for mobile
+            DeclineButton.TouchTap:Connect(function()
                 if actions.Decline.Callback then
                     actions.Decline.Callback()
                 end
