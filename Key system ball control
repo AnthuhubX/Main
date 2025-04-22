@@ -6,8 +6,8 @@ local player = Players.LocalPlayer
 
 -- List of valid keys
 local validKeys = {
-    ["111"] = "https://raw.githubusercontent.com/nocturnal631/Main/refs/heads/main/Control%20ball%20script",
-    ["Soulshub"] = "https://raw.githubusercontent.com/nocturnal631/Main/refs/heads/main/Control%20ball%20script"
+    ["111"] = "https://raw.githubusercontent.com/AnthuhubX/Main/refs/heads/main/Ball%20control",
+    ["Soulshub"] = "https://raw.githubusercontent.com/AnthuhubX/Main/refs/heads/main/Ball%20control"
 }
 
 -- Create ScreenGui
@@ -139,7 +139,7 @@ end)
 -- Get Key Button Click Event
 getKeyButton.MouseButton1Click:Connect(function()
     if setclipboard then
-        setclipboard("https://discord.gg/f2PRjSfJjR")
+        setclipboard("https://discord.gg/G9vHb4tU")
         sendNotification("Copied!", "Key copied to clipboard!")
     else
         sendNotification("Error", "Clipboard not supported!")
