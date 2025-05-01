@@ -425,6 +425,6 @@ local RTab = Window:CreateTab("Report Bugs", 4483362458)
 local DButton = RTab:CreateButton({
    Name = "Discord server click here to copy",
    Callback = function()
-   setclipboard("https://discord.gg/f2PRjSfJjR")
+   setclipboard("https://discord.gg/d4qp58pBQG")
    end,
 })
