@@ -12,7 +12,7 @@ local Window = Rayfield:CreateWindow({
    Name = "Soul hub | Dead Rails",
    Icon = 0, -- Icon in Topbar. Can use Lucide Icons (string) or Roblox Image (number). 0 to use no icon (default).
    LoadingTitle = "Wait",
-   LoadingSubtitle = "by NoNamefound",
+   LoadingSubtitle = "made by Sae and Souls hub",
    Theme = "Amethyst", -- Check https://docs.sirius.menu/rayfield/configuration/themes
 
    DisableRayfieldPrompts = false,
